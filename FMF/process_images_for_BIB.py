@@ -4,57 +4,44 @@
 # Brief: Thispiece of code will read through all images and fidn teh BIB numbers and tag them accordingly.
 #====================================================================================
 #
-import os
 import cv2
 import pytesseract
-from collections import defaultdict
 
-# Configure Tesseract path if needed (Windows users may need to specify)
-# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-# Explicitly set path if needed
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 def extract_bib_numbers_from_image(image_path):
-    """
-    Extract bib numbers from a given image using OCR.
-    Returns a list of detected numbers.
-    """
     img = cv2.imread(image_path)
+    if img is None:
+        return []
 
-    # Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    h, w = img.shape[:2]
 
-    # Optional: thresholding to improve OCR
-    _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+    # Adjust these values to tightly crop the bib area
+    top = int(h * 0.45)
+    bottom = int(h * 0.65)
+    left = int(w * 0.35)
+    right = int(w * 0.65)
 
-    # OCR
-    text = pytesseract.image_to_string(thresh, config="--psm 6 digits")
+    roi = img[top:bottom, left:right]
 
-    # Extract only numbers (bib numbers are usually numeric)
-    bib_numbers = [num for num in text.split() if num.isdigit()]
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    gray = cv2.resize(gray, None, fx=3.0, fy=3.0, interpolation=cv2.INTER_CUBIC)
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-    return bib_numbers
+    config = "--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789"
+    text = pytesseract.image_to_string(thresh, config=config)
 
-def tag_images_in_folder(folder_path):
-    """
-    Reads all JPEG images in a folder and tags them with bib numbers.
-    Returns a dictionary mapping image_path -> list of bib numbers.
-    """
-    image_tags = defaultdict(list)
+    bib = "".join(ch for ch in text if ch.isdigit())
 
-    for filename in os.listdir(folder_path):
-        if filename.lower().endswith(".jpg"):
-            image_path = os.path.join(folder_path, filename)
-            bib_numbers = extract_bib_numbers_from_image(image_path)
-            print (' Bib found : ', bib_numbers)
-            image_tags[image_path] = bib_numbers
-    return image_tags
+    return [bib] if bib else []
 
-# Example usage
-imagefolder = r"C:\Work\FMF\Images"
-image_tags = tag_images_in_folder(imagefolder)
 
-# Print results
-# for img, tags in image_tags.items():
-#     print(f"{img}: {tags}")
+
+# image_path = r"C:\Work\FMF\Images\SKB_6995.jpg"
+
+image_path = r"C:\Work\FMF\Images\SKB_7076.jpg"
+
+bib_numbers = extract_bib_numbers_from_image(image_path)
+print("Detected bib numbers:", bib_numbers)
+
+
