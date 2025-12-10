@@ -25,7 +25,6 @@ def create_thumbnails(input_folder, output_folder, size=(320, 240)):
             # thumbnail = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
             thumbnail = cv2.resize(img, (1024, int(img.shape[0] * 1024 / img.shape[1])), interpolation=cv2.INTER_AREA)
 
-
             # Save thumbnail
             out_path = os.path.join(output_folder, filename)
             cv2.imwrite(out_path, thumbnail)

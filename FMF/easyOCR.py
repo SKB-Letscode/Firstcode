@@ -1,5 +1,6 @@
 import cv2
 import easyocr
+import os
 
 reader = easyocr.Reader(['en'])
 
@@ -47,13 +48,23 @@ def extract_bib_easyocr(image_path):
     results = reader.readtext(crop)
     digits = [t.strip() for (_, t, c) in results if t.strip().isdigit()]
 
-    # Heuristic: choose the longest numeric string (most likely bib)
-    bib = max(digits, key=len) if digits else ""
-    return ([bib] if bib else []), crop
+    # # Heuristic: choose the longest numeric string (most likely bib)
+    # bib = max(digits, key=len) if digits else ""
+    # return ([bib] if bib else []), crop
+    return digits, crop
+
+def process_folder(folder_path):
+    tags = {}
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith((".jpg", ".jpeg", ".png")):
+            image_path = os.path.join(folder_path, filename)
+            bibs, crop = extract_bib_easyocr(image_path)
+            tags[image_path] = bibs
+            print(f"{filename}: {bibs}")
+    return tags
 
 if __name__ == "__main__":
-    path = r"C:\Work\FMF\Images\Thumbnails\SKB_7072.jpg"  
-    bibs, crop = extract_bib_easyocr(path)
-    print("Detected bibs:", bibs)
-    if crop is not None:
-        cv2.imwrite(r"C:\Work\FMF\Images\Thumbnails\SKB_7072_bib_crop_auto.jpg", crop)
+    folder = r"C:\Work\FMF\Images"
+    process_folder(folder)
+
+
