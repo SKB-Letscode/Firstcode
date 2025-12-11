@@ -46,7 +46,7 @@ def smart_bib_crop(img, min_conf=0.4, expand=0.25):
 
     crop = img[y1:y2, x1:x2]
     return crop, numeric_boxes
-
+# Version 1 - Gives unnecessary 66 and also misses when multiple bibs 
 def extract_bib_easyocr(image_path):
     img = cv2.imread(image_path)
     crop, boxes = smart_bib_crop(img)
@@ -55,12 +55,66 @@ def extract_bib_easyocr(image_path):
 
     # Second pass: read only the crop
     results = reader.readtext(crop)
-    digits = [t.strip() for (_, t, c) in results if t.strip().isdigit()]
+    digits = [t.strip() for (_, t, c) in results if t.strip().isdigit() and c >= 0.5]
 
     # # Heuristic: choose the longest numeric string (most likely bib)
     # bib = max(digits, key=len) if digits else ""
     # return ([bib] if bib else []), crop
     return digits, crop
+
+# # Version 2 - to fix Version 1 issues
+# Key improvements:
+
+# Higher confidence threshold (0.5 → 0.6): Reduces false positives like random "66"
+# Minimum bib length filter (≥2 or ≥3 digits): Prevents single digits from being detected
+# Duplicate removal: Uses a seen set to avoid detecting the same number twice
+# Process full image: Removed the crop step which might have been missing some bibs
+# Two-pass detection: First tries strict thresholds, then relaxes if nothing found
+# Sort by length: Longer numbers appear first (typically more reliable bibs)
+def extract_bib_easyocrV2(image_path, min_conf=0.5, min_bib_length=2):
+    """
+    Extract bib numbers from an image.
+    
+    Args:
+        image_path: Path to the image file
+        min_conf: Minimum confidence threshold (0.5 is more strict)
+        min_bib_length: Minimum number of digits for a valid bib (filters out single digits)
+    """
+    img = cv2.imread(image_path)
+
+    # img = cv2.imread(image_path)
+    # crop, boxes = smart_bib_crop(img)
+
+    if img is None:
+        return [], None
+    
+    # Read text from full image (not just cropped region)
+    results = reader.readtext(img)
+    
+    # Filter numeric text with stricter criteria
+    bibs = []
+    seen = set()  # To avoid duplicates
+    
+    for (bbox, text, conf) in results:
+        cleaned = text.strip()
+        
+        # More strict filtering:
+        # 1. Must be numeric
+        # 2. Must meet minimum confidence
+        # 3. Must meet minimum length (filters out single digits like "6")
+        # 4. Not already seen (avoid duplicates)
+        if (cleaned.isdigit() and 
+            conf >= min_conf and 
+            len(cleaned) >= min_bib_length and 
+            cleaned not in seen):
+            bibs.append(cleaned)
+            seen.add(cleaned)
+    
+    # Sort by length descending (longer numbers are more likely real bibs)
+    bibs.sort(key=len, reverse=True)
+    
+    return bibs, img
+
 
 def process_folder(folder_path,output_excel="bib_results.xlsx"):
     tags = {}
@@ -69,7 +123,18 @@ def process_folder(folder_path,output_excel="bib_results.xlsx"):
     for filename in os.listdir(folder_path):
         if filename.lower().endswith((".jpg", ".jpeg", ".png")):
             image_path = os.path.join(folder_path, filename)
-            bibs, crop = extract_bib_easyocr(image_path)
+
+            # Call Version 1
+            bibs, img = extract_bib_easyocr(image_path)
+
+            # Call Version 2
+            # # Try with higher confidence threshold first
+            # bibs, img = extract_bib_easyocrV2(image_path, min_conf=0.6, min_bib_length=3)
+            
+            # # If no results, try with relaxed thresholds
+            # if not bibs:
+            #     bibs, img = extract_bib_easyocrV2(image_path, min_conf=0.4, min_bib_length=2)
+                        
             tags[image_path] = bibs
             print(f"{filename}: {bibs}")
             
@@ -88,5 +153,5 @@ def process_folder(folder_path,output_excel="bib_results.xlsx"):
 
 if __name__ == "__main__":
     # folder = r"C:\Work\FMF\Images"
-    folder = r"C:\Work\FMF\Images\Downloads\Thumbnails"
+    folder = r"C:\Work\FMF\Images\Downloads\Batch1"
     process_folder(folder)
