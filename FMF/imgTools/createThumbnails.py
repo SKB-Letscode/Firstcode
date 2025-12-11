@@ -39,6 +39,8 @@ def create_thumbnails(input_folder, output_folder, size=(320, 240)):
 
 # Main sub 
 if __name__ == "__main__":
-    input_folder = r"C:\Work\FMF\app\gdrive\Downloads"
-    output_folder = r"C:\Work\FMF\app\gdrive\Downloads\Thumbnails"
+    input_folder = r"C:\Work\FMF\Images\Downloads"
+    output_folder = r"C:\Work\FMF\Images\Downloads\Thumbnails"
     create_thumbnails(input_folder, output_folder, size=(320,240))
+
+    

@@ -9,6 +9,7 @@
 import cv2
 import easyocr
 import os
+import pandas as pd
 
 reader = easyocr.Reader(['en'])
 
@@ -61,17 +62,31 @@ def extract_bib_easyocr(image_path):
     # return ([bib] if bib else []), crop
     return digits, crop
 
-def process_folder(folder_path):
+def process_folder(folder_path,output_excel="bib_results.xlsx"):
     tags = {}
+    results_list = []
+    
     for filename in os.listdir(folder_path):
         if filename.lower().endswith((".jpg", ".jpeg", ".png")):
             image_path = os.path.join(folder_path, filename)
             bibs, crop = extract_bib_easyocr(image_path)
             tags[image_path] = bibs
             print(f"{filename}: {bibs}")
+            
+            # Add to results list
+            results_list.append({
+                'Filename': filename,
+                'Path': image_path,
+                'Bibs': ', '.join(bibs) if bibs else ''
+            })    
+    # Create DataFrame and save to Excel
+    df = pd.DataFrame(results_list)
+    df.to_excel(output_excel, index=False)
+    print(f"\n✅ Results saved to {output_excel}")
+
     return tags
 
 if __name__ == "__main__":
     # folder = r"C:\Work\FMF\Images"
-    folder = r"C:\Work\FMF\app\gdrive\Downloads"
+    folder = r"C:\Work\FMF\Images\Downloads\Thumbnails"
     process_folder(folder)
