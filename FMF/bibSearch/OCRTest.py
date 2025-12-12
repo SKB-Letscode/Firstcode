@@ -3,7 +3,7 @@ import pytesseract
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-image_path = r"C:\Work\FMF\Images\SKB_6995.jpg"
+image_path = r"C:\Work\FMF\Images\Downloads\Batch1\SKB_4217.jpg"
 
 img = cv2.imread(image_path)
 

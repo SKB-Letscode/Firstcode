@@ -12,8 +12,6 @@ h, w = img.shape[:2]
 # left = int(w * 0.35)
 # right = int(w * 0.65)
 
-import cv2
-
 image_path = r"C:\Work\FMF\Images\SKB_6995.jpg"
 output_path = r"C:\Work\FMF\Images\SKB_6995_crop.jpg"
 

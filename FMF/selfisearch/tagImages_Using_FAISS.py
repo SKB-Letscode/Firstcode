@@ -6,7 +6,6 @@
 #   1 - Create a folder and place all images to be processed in it
 #   2 - Update LOCAL_IMAGE_FOLDER path to point to that folder
 #====================================================================================
-
 import os
 import sqlite3
 import numpy as np
@@ -15,62 +14,39 @@ import pickle
 import face_recognition
 
 from PIL import Image
+from app.imgTools.imgTools import resize_image
+
+from app.dbconnector import LOCAL_IMAGE_FOLDER,local_db_path,local_index_path,local_meta_path,LOCAL_IMAGE_FOLDER
+
+from app.dbconnector import init_db
+
+
+# Data configuration may get changed later
+EventID = 1
+
 # Used for resizing images
 MAX_DIM = 800
 
-# AWS S3 Config
-s3_bucket_name = "sara-s3-bucket"
-s3_db_folder_prefix = r"FMF/SQLiteDB"  # S3 subfolder where DB is stored
-s3_imagefolder_prefix = r"FMF/FMFImages/"  # S3 image folder folder path
-local_db_folder = r"C:\Work\FMF\DB"  # Local folder to store DB
+# # Local file names
+# DB_FILE =  str(EventID) +"_ImageDB.sqlite"
+# INDEX_FILE = str(EventID) +"_faiss_face_index.bin"
+# META_FILE = str(EventID) +"_face_metadata.pkl"
+# LOCAL_DB_FOLDER = r"C:\Work\FMF\DB"  # Local folder to store DB
+# LOCAL_IMAGE_FOLDER = r"C:\Work\FMF\Images\Downloads\Batch1"
+
+# # Full local paths
+
+# local_db_path = os.path.join(LOCAL_DB_FOLDER, DB_FILE)
+# local_index_path = os.path.join(LOCAL_DB_FOLDER, INDEX_FILE)
+# local_meta_path = os.path.join(LOCAL_DB_FOLDER, META_FILE)
 
 
-# Local file names
-DB_FILE = "ImageDB.sqlite"
-INDEX_FILE = "faiss_face_index.bin"
-META_FILE = "face_metadata.pkl"
-
-# Full local paths
-local_db_path = os.path.join(local_db_folder, DB_FILE)
-local_index_path = os.path.join(local_db_folder, INDEX_FILE)
-local_meta_path = os.path.join(local_db_folder, META_FILE)
-
-# Local sub folders 
-LOCAL_IMAGE_FOLDER = r"C:\Work\FMF\Images"
-
-# Initialize DB
-def init_db():
-    conn = sqlite3.connect(local_db_path)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS TM_Images (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            FileName TEXT,
-            FilePath TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS TM_Faces (
-            FaceID INTEGER PRIMARY KEY AUTOINCREMENT,
-            ImageID INTEGER,
-            Embedding BLOB,
-            FOREIGN KEY(ImageID) REFERENCES TM_Images(ID)
-        )
-    """)
-    conn.commit()
-    conn.close()
-# Small funtion to resize image during face identification process for fast performance
-def resize_image(img_path, max_dim=MAX_DIM):
-    # Open image, scale down preserving aspect ratio and return RGB numpy array
-    img = Image.open(img_path).convert('RGB')
-    img.thumbnail((max_dim, max_dim), Image.LANCZOS)
-    return np.array(img)
 # function to store the images and face idendified in the image to a db tables   
 def store_image_and_faces(file_name, file_path, face_embeddings):
     # Store image and its face embeddings in DB
     conn = sqlite3.connect(local_db_path)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO TM_Images (FileName, FilePath) VALUES (?, ?)", (file_name, file_path))
+    cursor.execute("INSERT INTO TM_Images (EventID, FileName, FilePath) VALUES (?, ?, ?)", (EventID, file_name, file_path))
     image_id = cursor.lastrowid
     for emb in face_embeddings:
         cursor.execute("INSERT INTO TM_Faces (ImageID, Embedding) VALUES (?, ?)", (image_id, pickle.dumps(emb)))
