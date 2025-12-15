@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find My Photos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .search-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .results-header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .results-header h2 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .results-count {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .image-info {
+            padding: 15px;
+        }
+
+        .image-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .image-distance {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .download-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #5568d3;
+        }
+
+        .no-results {
+            background: white;
+            border-radius: 15px;
+            padding: 60px 30px;
+            text-align: center;
+            color: #666;
+        }
+
+        .no-results-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .error {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .search-panel {
+                padding: 20px;
+            }
+
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 15px;
+            }
+
+            .image-card img {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Find My Photos</h1>
+            <p>Search by face or BIB number</p>
+        </div>
+
+        <div class="search-panel">
+            <div class="tabs">
+                <button class="tab active" data-tab="face">Search by Face</button>
+                <button class="tab" data-tab="bib">Search by BIB</button>
+            </div>
+
+            <div id="face-tab" class="tab-content active">
+                <form id="face-form">
+                    <div class="form-group">
+                        <label>Upload Your Selfie</label>
+                        <div class="file-upload" id="file-upload">
+                            <input type="file" id="face-file" accept="image/*" required>
+                            <label for="face-file" class="file-upload-label">
+                                📷 Click to upload or drag & drop
+                                <br><small>Supported: JPG, PNG</small>
+                            </label>
+                        </div>
+                        <div id="file-name" style="margin-top: 10px; color: #667eea; font-size: 0.9rem;"></div>
+                    </div>
+                    <button type="submit" class="btn">Search Photos</button>
+                </form>
+            </div>
+
+            <div id="bib-tab" class="tab-content">
+                <form id="bib-form">
+                    <div class="form-group">
+                        <label for="bib-number">Enter BIB Number</label>
+                        <input type="text" id="bib-number" placeholder="e.g., 123" required>
+                    </div>
+                    <button type="submit" class="btn">Search Photos</button>
+                </form>
+            </div>
+
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Searching for your photos...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="results-header">
+                <h2>Search Results</h2>
+                <p class="results-count" id="results-count"></p>
+            </div>
+            <div class="gallery" id="gallery"></div>
+        </div>
+
+        <div class="results" id="no-results">
+            <div class="no-results">
+                <div class="no-results-icon">😔</div>
+                <h2>No Photos Found</h2>
+                <p>Try searching with a different image or BIB number</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                
+                hideError();
+                hideResults();
+            });
+        });
+
+        // File upload handling
+        const fileInput = document.getElementById('face-file');
+        const fileUpload = document.getElementById('file-upload');
+        const fileName = document.getElementById('file-name');
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileName.textContent = `✅ Selected: ${e.target.files[0].name}`;
+            }
+        });
+
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = '#667eea';
+            fileUpload.style.background = '#f5f5f5';
+        });
+
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.style.borderColor = '#e0e0e0';
+            fileUpload.style.background = 'transparent';
+        });
+
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = '#e0e0e0';
+            fileUpload.style.background = 'transparent';
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                fileName.textContent = `✅ Selected: ${e.dataTransfer.files[0].name}`;
+            }
+        });
+
+        // Face search form
+        document.getElementById('face-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                showError('Please select an image file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoading();
+            hideError();
+
+            try {
+                const response = await fetch(`${API_BASE}/search-face`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Search failed');
+
+                const data = await response.json();
+                displayResults(data.matches, 'face');
+            } catch (error) {
+                showError('Failed to search. Please check if the API is running.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // BIB search form
+        document.getElementById('bib-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bibNumber = document.getElementById('bib-number').value.trim();
+            if (!bibNumber) {
+                showError('Please enter a BIB number');
+                return;
+            }
+
+            showLoading();
+            hideError();
+
+            try {
+                const response = await fetch(`${API_BASE}/search-bib`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ bib_number: bibNumber })
+                });
+
+                if (!response.ok) throw new Error('Search failed');
+
+                const data = await response.json();
+                displayResults(data.matches, 'bib');
+            } catch (error) {
+                showError('Failed to search. Please check if the API is running.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+            hideResults();
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        function hideError() {
+            document.getElementById('error').classList.remove('active');
+        }
+
+        function hideResults() {
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('no-results').classList.remove('active');
+        }
+
+        function displayResults(matches, searchType) {
+            const gallery = document.getElementById('gallery');
+            const resultsDiv = document.getElementById('results');
+            const noResultsDiv = document.getElementById('no-results');
+            const resultsCount = document.getElementById('results-count');
+
+            gallery.innerHTML = '';
+
+            if (!matches || matches.length === 0) {
+                noResultsDiv.classList.add('active');
+                return;
+            }
+
+            resultsCount.textContent = `Found ${matches.length} photo${matches.length !== 1 ? 's' : ''}`;
+            resultsDiv.classList.add('active');
+
+            matches.forEach((match, index) => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+
+                const imageUrl = `file:///${match.FilePath.replace(/\\/g, '/')}`;
+                
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
+                    <div class="image-info">
+                        <div class="image-name" title="${match.FileName}">${match.FileName}</div>
+                        ${match.Distance !== undefined ? `<div class="image-distance">Similarity: ${(1 - match.Distance).toFixed(2)}</div>` : ''}
+                        <button class="download-btn" onclick="downloadImage('${match.FilePath}', '${match.FileName}')">
+                            ⬇️ Download
+                        </button>
+                    </div>
+                `;
+
+                gallery.appendChild(card);
+            });
+        }
+
+        function downloadImage(filePath, fileName) {
+            // Create a temporary link to trigger download
+            const link = document.createElement('a');
+            link.href = `file:///${filePath.replace(/\\/g, '/')}`;
+            link.download = fileName;
+            link.click();
+        }
+    </script>
+</body>
+</html>
