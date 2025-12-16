@@ -1,0 +1,29 @@
+services:
+  # FastAPI Backend Service
+  - type: web
+    name: fmf-face-search-api
+    runtime: python
+    plan: free  # Change to 'starter' or higher for production
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.selfisearch.face_search_api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: AWS_ACCESS_KEY_ID
+        sync: false  # Set in Render dashboard
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false  # Set in Render dashboard
+      - key: AWS_DEFAULT_REGION
+        value: us-east-1  # Change to your region
+      - key: S3_BUCKET_NAME
+        value: sara-s3-bucket
+      - key: DB_FOLDER
+        value: /opt/render/project/src/DB
+      - key: IMAGE_FOLDER
+        value: /opt/render/project/src/Images
+    disk:
+      name: fmf-data
+      mountPath: /opt/render/project/src/DB
+      sizeGB: 1  # Free tier allows 1GB disk
+    healthCheckPath: /health
+    autoDeploy: true

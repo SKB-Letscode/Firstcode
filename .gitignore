@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Database
+*.sqlite
+*.db
+DB/*.sqlite
+DB/*.bin
+DB/*.pkl
+
+# Environment variables
+.env
+
+# Images
+Images/
+*.jpg
+*.jpeg
+*.png
+*.gif
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+temp_*
+debug_*
+
+# AWS & Credentials
+credentials.json
+token.pickle
+
+# Excel temp files
+*.xlsx
+~$*.xlsx
