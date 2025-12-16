@@ -74,20 +74,16 @@ git push -u origin main
 5. Add Environment Variables:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
-   - `AWS_DEFAULT_REGION`
    - `S3_BUCKET_NAME`
-   - `DB_FOLDER`: `/opt/render/project/src/DB`
-   - `IMAGE_FOLDER`: `/opt/render/project/src/Images`
+   - `DB_FOLDER`: `/tmp/DB` (ephemeral, lost on restart)
+   - `IMAGE_FOLDER`: `/tmp/Images` (ephemeral, lost on restart)
 
-6. Add a Disk (for persistent storage):
-   - **Name**: fmf-data
-   - **Mount Path**: `/opt/render/project/src/DB`
-   - **Size**: 1 GB (free tier)
-
-7. Set Health Check:
+6. Set Health Check:
    - **Path**: `/health`
 
-8. Click "Create Web Service"
+7. Click "Create Web Service"
+
+**Note**: Free tier uses ephemeral storage - database and FAISS index files in `/tmp/` will be lost on restart. The app will need to download from S3 or rebuild on each restart. For persistent storage, upgrade to a paid plan that supports disks.
 
 ## Step 4: Post-Deployment Setup
 
