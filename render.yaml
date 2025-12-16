@@ -8,7 +8,7 @@ services:
     startCommand: uvicorn app.selfisearch.face_search_api:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.11.9
       - key: AWS_ACCESS_KEY_ID
         sync: false  # Set in Render dashboard
       - key: AWS_SECRET_ACCESS_KEY
