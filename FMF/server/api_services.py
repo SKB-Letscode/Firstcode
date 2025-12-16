@@ -4,7 +4,7 @@
 # Created on: 21 Nov 2025
 # Brief: This script is to expose apis for uplaod / search images 
 #           by end users can be used by any other cluient apps/pages.
-# uvicorn app.face_search_api:app --reload
+# uvicorn uvicorn app.server.api_services:service --reload
 #====================================================================================
 #
 from fastapi import FastAPI, UploadFile, File
@@ -88,6 +88,14 @@ def get_image(filename: str):
         return FileResponse(image_path)
     return {"error": "Image not found", "path": image_path}
 
+@service.get("/logo")
+def get_logo():
+    """Serve the logo image"""
+    logo_path = os.path.join(workspace_root, "Images", "support", "flashbulbzz.jpg")
+    if os.path.exists(logo_path):
+        return FileResponse(logo_path)
+    return {"error": "Logo not found", "path": logo_path}
+
 @service.post("/search-face")
 async def search_face(file: UploadFile = File(...), top_k: int = 5):
     temp_path = f"temp_{file.filename}"
@@ -123,7 +131,14 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
                 img_info = cursor.fetchone()
                 conn.close()
                 if img_info:
-                    results.append({"FileName": img_info[0], "FilePath": img_info[1], "Distance": float(distances[0][j])})
+                    # Extract thumbnail filename from FilePath
+                    thumbnail_name = os.path.basename(img_info[1])
+                    results.append({
+                        "FileName": img_info[0], 
+                        "FilePath": img_info[1], 
+                        "ThumbnailUrl": f"/images/{thumbnail_name}",
+                        "Distance": float(distances[0][j])
+                    })
                 else:
                     results.append("No Matching Image Found")
     return {"matches": results}
@@ -161,10 +176,13 @@ async def search_bib(request: BibSearchRequest):
     conn.close()
     
     for row in rows:
+        # Extract thumbnail filename from FilePath
+        thumbnail_name = os.path.basename(row[2])
         results.append({
             "ImageID": row[0],
             "FileName": row[1],
-            "FilePath": row[2]
+            "FilePath": row[2],
+            "ThumbnailUrl": f"/images/{thumbnail_name}"
         })
     
     if not results:

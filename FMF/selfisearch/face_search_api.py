@@ -8,6 +8,8 @@
 #====================================================================================
 #
 from fastapi import FastAPI, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import os
 import sqlite3
@@ -18,7 +20,7 @@ import face_recognition
 
 from app.imgTools.imgTools import resize_image
 from PIL import Image
-from app.dbconnector import local_db_path, local_index_path, local_meta_path
+from app.dbconnector import local_db_path, local_index_path, local_meta_path, LOCAL_IMAGE_FOLDER
 
 # Used for resizing images
 MAX_DIM = 800
@@ -31,6 +33,20 @@ with open(local_meta_path, 'rb') as f:
     face_ids = pickle.load(f)
 
 app = FastAPI(title="Face Search API")
+
+# Enable CORS for web client
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files for serving images
+thumbnails_path = os.path.join(LOCAL_IMAGE_FOLDER, "Downloads", "Thumbnails")
+if os.path.exists(thumbnails_path):
+    app.mount("/images", StaticFiles(directory=thumbnails_path), name="images")
 
 @app.get("/health")
 def health_check():
@@ -71,7 +87,9 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
                 img_info = cursor.fetchone()
                 conn.close()
                 if img_info:
-                    results.append({"FileName": img_info[0], "FilePath": img_info[1], "Distance": float(distances[0][j])})
+                    # Return thumbnail filename for web serving
+                    thumbnail_name = os.path.basename(img_info[1])
+                    results.append({"FileName": img_info[0], "ThumbnailUrl": f"/images/{thumbnail_name}", "FilePath": img_info[1], "Distance": float(distances[0][j])})
                 else:
                     results.append("No Matching Image Found")
     return {"matches": results}

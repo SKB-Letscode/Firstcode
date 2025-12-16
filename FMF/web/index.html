@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF9800 0%, #FF6B35 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -24,14 +24,34 @@
         }
 
         .header {
-            text-align: center;
             color: white;
             margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-logo {
+            width: 120px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .header h1 {
             font-size: 2.5rem;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1rem;
         }
 
         .search-panel {
@@ -61,8 +81,8 @@
         }
 
         .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+            color: #FF9800;
+            border-bottom-color: #FF9800;
             font-weight: 600;
         }
 
@@ -96,7 +116,7 @@
 
         .form-group input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #FF9800;
         }
 
         .file-upload {
@@ -109,8 +129,8 @@
         }
 
         .file-upload:hover {
-            border-color: #667eea;
-            background: #f5f5f5;
+            border-color: #FF9800;
+            background: #fff8f0;
         }
 
         .file-upload input[type="file"] {
@@ -123,7 +143,7 @@
         }
 
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF9800 0%, #FF6B35 100%);
             color: white;
             border: none;
             padding: 14px 32px;
@@ -198,67 +218,107 @@
 
         .gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
         }
 
         .image-card {
             background: white;
-            border-radius: 12px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid transparent;
         }
 
         .image-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 35px rgba(255, 152, 0, 0.25);
+            border-color: rgba(255, 152, 0, 0.3);
+        }
+
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         }
 
         .image-card img {
             width: 100%;
-            height: 250px;
-            object-fit: cover;
+            height: 160px;
+            object-fit: contain;
+            background: transparent;
         }
 
         .image-info {
-            padding: 15px;
+            padding: 12px;
+            background: linear-gradient(to bottom, white, #f8f9fa);
         }
 
         .image-name {
             font-weight: 600;
             color: #333;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .image-distance {
-            color: #666;
+            color: #FF9800;
             font-size: 0.85rem;
-            margin-bottom: 12px;
+            font-weight: 600;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        .download-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            width: 100%;
-            cursor: pointer;
+        .image-distance::before {
+            content: '⭐';
             font-size: 0.9rem;
+        }
+
+        .download-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 152, 0, 0.95);
+            color: white;
+            border: 3px solid white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
+            opacity: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10;
         }
 
-        .download-btn:hover {
-            background: #5568d3;
+        .image-card:hover .download-icon {
+            opacity: 1;
+            animation: bounceIn 0.4s ease;
+        }
+
+        .download-icon:hover {
+            background: #FF6B35;
+            transform: translate(-50%, -50%) scale(1.2);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            60% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
         }
 
         .no-results {
@@ -322,8 +382,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Find My Photos</h1>
-            <p>Search by face or BIB number</p>
+            <div class="header-content">
+                <h1>🔍 Find My Photos</h1>
+                <p>Search by face or BIB number</p>
+            </div>
+            <img src="http://localhost:8000/logo" alt="FlashBulbzz Logo" class="header-logo">
         </div>
 
         <div class="search-panel">
@@ -343,7 +406,7 @@
                                 <br><small>Supported: JPG, PNG</small>
                             </label>
                         </div>
-                        <div id="file-name" style="margin-top: 10px; color: #667eea; font-size: 0.9rem;"></div>
+                        <div id="file-name" style="margin-top: 10px; color: #FF9800; font-size: 0.9rem;"></div>
                     </div>
                     <button type="submit" class="btn">Search Photos</button>
                 </form>
@@ -414,7 +477,7 @@
 
         fileUpload.addEventListener('dragover', (e) => {
             e.preventDefault();
-            fileUpload.style.borderColor = '#667eea';
+            fileUpload.style.borderColor = '#FF9800';
             fileUpload.style.background = '#f5f5f5';
         });
 
@@ -544,29 +607,39 @@
                 const card = document.createElement('div');
                 card.className = 'image-card';
 
-                const imageUrl = `file:///${match.FilePath.replace(/\\/g, '/')}`;
+                // Use ThumbnailUrl from API (already includes /images/ prefix)
+                const imageUrl = match.ThumbnailUrl ? `${API_BASE}${match.ThumbnailUrl}` : `${API_BASE}/images/${match.FileName}`;
                 
                 card.innerHTML = `
-                    <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
-                    <div class="image-info">
-                        <div class="image-name" title="${match.FileName}">${match.FileName}</div>
-                        ${match.Distance !== undefined ? `<div class="image-distance">Similarity: ${(1 - match.Distance).toFixed(2)}</div>` : ''}
-                        <button class="download-btn" onclick="downloadImage('${match.FilePath}', '${match.FileName}')">
-                            ⬇️ Download
-                        </button>
+                    <div class="image-wrapper">
+                        <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
+                        <button class="download-icon" onclick="downloadImage('${imageUrl}', '${match.FileName}')" title="Download ${match.FileName}">⬇</button>
                     </div>
+                    ${match.Distance !== undefined ? `<div class="image-info"><div class="image-distance">Similarity: ${(1 - match.Distance).toFixed(2)}</div></div>` : ''}
                 `;
 
                 gallery.appendChild(card);
             });
         }
 
-        function downloadImage(filePath, fileName) {
-            // Create a temporary link to trigger download
-            const link = document.createElement('a');
-            link.href = `file:///${filePath.replace(/\\/g, '/')}`;
-            link.download = fileName;
-            link.click();
+        function downloadImage(imageUrl, fileName) {
+            // Download image via HTTP
+            fetch(imageUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(err => {
+                    console.error('Download failed:', err);
+                    alert('Failed to download image');
+                });
         }
     </script>
 </body>
