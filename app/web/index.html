@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find My Photos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,7 +14,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgb(240, 228, 176);
             min-height: 100vh;
             padding: 20px;
         }
@@ -24,14 +25,38 @@
         }
 
         .header {
-            text-align: center;
             color: white;
             margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-logo {
+            width: 350px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: #000000;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 0.9rem;
         }
 
         .search-panel {
@@ -61,8 +86,8 @@
         }
 
         .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+            color: #D4AF37;
+            border-bottom-color: #D4AF37;
             font-weight: 600;
         }
 
@@ -96,7 +121,7 @@
 
         .form-group input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #D4AF37;
         }
 
         .file-upload {
@@ -109,8 +134,8 @@
         }
 
         .file-upload:hover {
-            border-color: #667eea;
-            background: #f5f5f5;
+            border-color: #D4AF37;
+            background: rgba(212, 175, 55, 0.1);
         }
 
         .file-upload input[type="file"] {
@@ -123,7 +148,7 @@
         }
 
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #E5C100 0%, #D4AF37 100%);
             color: white;
             border: none;
             padding: 14px 32px;
@@ -157,7 +182,7 @@
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border-top: 4px solid #D4AF37;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -198,67 +223,100 @@
 
         .gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
         }
 
         .image-card {
             background: white;
-            border-radius: 12px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid transparent;
         }
 
         .image-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 35px rgba(255, 152, 0, 0.25);
+            border-color: rgba(255, 152, 0, 0.3);
+        }
+
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px;
+            box-sizing: border-box;
         }
 
         .image-card img {
             width: 100%;
-            height: 250px;
-            object-fit: cover;
+            height: 100%;
+            object-fit: contain;
+            background: transparent;
         }
 
         .image-info {
-            padding: 15px;
+            padding: 12px;
+            background: linear-gradient(to bottom, white, #f8f9fa);
         }
 
         .image-name {
             font-weight: 600;
             color: #333;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .image-distance {
-            color: #666;
+            color: #FF9800;
             font-size: 0.85rem;
-            margin-bottom: 12px;
-        }
-
-        .download-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            width: 100%;
-            cursor: pointer;
-            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: background 0.3s;
+            gap: 5px;
         }
 
-        .download-btn:hover {
-            background: #5568d3;
+        .image-distance::before {
+            content: '⭐';
+            font-size: 0.9rem;
+        }
+
+        .download-icon {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: transparent;
+            border: none;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            opacity: 0.8;
+            z-index: 10;
+            padding: 0;
+        }
+
+        .download-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-card:hover .download-icon {
+            opacity: 1;
+        }
+
+        .download-icon:hover {
+            /* background: rgba(0, 0, 0, 0.8); */
+            transform: scale(1.1);
         }
 
         .no-results {
@@ -314,18 +372,37 @@
             }
 
             .gallery {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .image-card img {
+                height: 140px;
+            }
+
+            .header-logo {
+                width: 250px;
+            }
+
+            .download-icon {
+                width: 28px;
+                height: 28px;
+                top: 12px;
+                right: 12px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        
         <div class="header">
-            <h1>🔍 Find My Photos</h1>
-            <p>Search by face or BIB number</p>
+            <img src="http://localhost:8000/logo" alt="ShootinStudio Logo" class="header-logo">
+            <div class="header-content">
+                <h1>🔍 Find My Photos</h1>
+                <!-- <p>Search by face or BIB number</p> -->
+            </div>
         </div>
-
         <div class="search-panel">
             <div class="tabs">
                 <button class="tab active" data-tab="face">Search by Face</button>
@@ -343,7 +420,7 @@
                                 <br><small>Supported: JPG, PNG</small>
                             </label>
                         </div>
-                        <div id="file-name" style="margin-top: 10px; color: #667eea; font-size: 0.9rem;"></div>
+                        <div id="file-name" style="margin-top: 10px; color: #FF9800; font-size: 0.9rem;"></div>
                     </div>
                     <button type="submit" class="btn">Search Photos</button>
                 </form>
@@ -414,7 +491,7 @@
 
         fileUpload.addEventListener('dragover', (e) => {
             e.preventDefault();
-            fileUpload.style.borderColor = '#667eea';
+            fileUpload.style.borderColor = '#FF9800';
             fileUpload.style.background = '#f5f5f5';
         });
 
@@ -544,29 +621,41 @@
                 const card = document.createElement('div');
                 card.className = 'image-card';
 
-                const imageUrl = `file:///${match.FilePath.replace(/\\/g, '/')}`;
+                // Use ThumbnailUrl from API (already includes /images/ prefix)
+                const imageUrl = match.ThumbnailUrl ? `${API_BASE}${match.ThumbnailUrl}` : `${API_BASE}/images/${match.FileName}`;
                 
                 card.innerHTML = `
-                    <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
-                    <div class="image-info">
-                        <div class="image-name" title="${match.FileName}">${match.FileName}</div>
-                        ${match.Distance !== undefined ? `<div class="image-distance">Similarity: ${(1 - match.Distance).toFixed(2)}</div>` : ''}
-                        <button class="download-btn" onclick="downloadImage('${match.FilePath}', '${match.FileName}')">
-                            ⬇️ Download
+                    <div class="image-wrapper">
+                        <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
+                        <button class="download-icon" onclick="downloadImage('${imageUrl}', '${match.FileName}')" title="Download ${match.FileName}">
+                            <img src="${API_BASE}/download-icon" alt="⬇" onerror="this.style.display='none'; this.parentElement.innerHTML='⬇';">
                         </button>
                     </div>
+                    ${match.Distance !== undefined ? `<div class="image-info"><div class="image-distance">Similarity: ${(1 - match.Distance).toFixed(2)}</div></div>` : ''}
                 `;
 
                 gallery.appendChild(card);
             });
         }
 
-        function downloadImage(filePath, fileName) {
-            // Create a temporary link to trigger download
-            const link = document.createElement('a');
-            link.href = `file:///${filePath.replace(/\\/g, '/')}`;
-            link.download = fileName;
-            link.click();
+        function downloadImage(imageUrl, fileName) {
+            // Download image via HTTP
+            fetch(imageUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(err => {
+                    console.error('Download failed:', err);
+                    alert('Failed to download image');
+                });
         }
     </script>
 </body>
