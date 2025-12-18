@@ -4,6 +4,7 @@
 # Created on: 21 Nov 2025
 # Brief: This script is to expose apis for uplaod / search images 
 #           by end users can be used by any other cluient apps/pages.
+# 18-Dec-2025 : Added event-images APIs and pagination support
 # uvicorn app.server.api_services:service --reload
 #====================================================================================
 #
@@ -27,6 +28,12 @@ from app.dbconnector import local_db_path, local_index_path, local_meta_path
 # Request model for BIB search
 class BibSearchRequest(BaseModel):
     bib_number: str
+
+# Request model for Event images with pagination
+class EventImagesRequest(BaseModel):
+    event_id: int
+    offset: int = 0
+    limit: int = 10
 
 # Base image location for thumbnails
 workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -197,6 +204,108 @@ async def search_bib(request: BibSearchRequest):
         return {"message": f"No images found with BIB number: {bib_number}", "matches": []}
     
     return {"matches": results, "count": len(results)}
+
+# -----------------------------------------------------------------------------------------------------
+# Service to get list of active events
+# Returns all events where Status = 'Active'
+# -----------------------------------------------------------------------------------------------------
+
+@service.get("/events")
+async def get_active_events():
+    """
+    Get list of all active events.
+    
+    Returns:
+        JSON with list of active events (ID, Name, Date, Organizer, Venue, TotalImages)
+    """
+    results = []
+    
+    conn = sqlite3.connect(local_db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT ID, Name, Date, Organizer, Venue, TotalImages
+        FROM TM_Events
+        WHERE Atatus = 'Active'
+        ORDER BY Date DESC
+    """)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    for row in rows:
+        results.append({
+            "ID": row[0],
+            "Name": row[1],
+            "Date": row[2],
+            "Organizer": row[3],
+            "Venue": row[4],
+            "TotalImages": row[5]
+        })
+    
+    return {"events": results, "count": len(results)}
+
+# -----------------------------------------------------------------------------------------------------
+# Service to get images for a specific event with pagination
+# Receives event_id, offset, and limit for pagination
+# -----------------------------------------------------------------------------------------------------
+
+@service.post("/event-images")
+async def get_event_images(request: EventImagesRequest):
+    """
+    Get images for a specific event with pagination.
+    
+    Args:
+        request: EventImagesRequest containing event_id, offset, and limit
+    
+    Returns:
+        JSON with list of images for the event and pagination info
+    """
+    event_id = request.event_id
+    offset = request.offset
+    limit = request.limit
+    
+    results = []
+    
+    conn = sqlite3.connect(local_db_path)
+    cursor = conn.cursor()
+    
+    # Get total count for this event
+    cursor.execute("""
+        SELECT COUNT(*) FROM TM_Images WHERE EventID = ?
+    """, (event_id,))
+    total_count = cursor.fetchone()[0]
+    
+    # Get paginated images
+    cursor.execute("""
+        SELECT ID, FileName, FilePath
+        FROM TM_Images
+        WHERE EventID = ?
+        ORDER BY ID
+        LIMIT ? OFFSET ?
+    """, (event_id, limit, offset))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    for row in rows:
+        # Extract thumbnail filename from FilePath
+        thumbnail_name = os.path.basename(row[2])
+        results.append({
+            "ImageID": row[0],
+            "FileName": row[1],
+            "FilePath": row[2],
+            "ThumbnailUrl": f"/images/{thumbnail_name}"
+        })
+    
+    return {
+        "matches": results,
+        "count": len(results),
+        "total": total_count,
+        "offset": offset,
+        "limit": limit,
+        "has_more": (offset + len(results)) < total_count
+    }
 
 
 if __name__ == "__main__":

@@ -147,6 +147,36 @@
             font-size: 1rem;
         }
 
+        .event-select {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23D4AF37' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .event-select:focus {
+            outline: none;
+            border-color: #D4AF37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .event-select:hover {
+            border-color: #D4AF37;
+        }
+
+        .event-select option {
+            padding: 10px;
+        }
+
         .btn {
             background: linear-gradient(135deg, #E5C100 0%, #D4AF37 100%);
             color: white;
@@ -228,7 +258,7 @@
         }
 
         .image-card {
-            background: white;
+            background: rgb(220, 205, 155);
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.12);
@@ -247,7 +277,7 @@
             position: relative;
             width: 100%;
             height: 160px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: linear-gradient(135deg, rgb(215, 200, 150) 0%, rgb(205, 190, 140) 100%);
             padding: 12px;
             box-sizing: border-box;
         }
@@ -261,7 +291,7 @@
 
         .image-info {
             padding: 12px;
-            background: linear-gradient(to bottom, white, #f8f9fa);
+            background: linear-gradient(to bottom, rgb(220, 205, 155), rgb(210, 195, 145));
         }
 
         .image-name {
@@ -372,12 +402,25 @@
             }
 
             .gallery {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .image-wrapper {
+                height: 100px;
+                padding: 4px;
             }
 
             .image-card img {
-                height: 140px;
+                height: 100%;
+            }
+
+            .image-info {
+                padding: 6px 8px;
+            }
+
+            .image-distance {
+                font-size: 0.75rem;
             }
 
             .header-logo {
@@ -385,10 +428,10 @@
             }
 
             .download-icon {
-                width: 28px;
-                height: 28px;
-                top: 12px;
-                right: 12px;
+                width: 24px;
+                height: 24px;
+                top: 6px;
+                right: 2px;
             }
         }
     </style>
@@ -404,6 +447,13 @@
             </div>
         </div>
         <div class="search-panel">
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label for="event-select">Select Event</label>
+                <select id="event-select" class="event-select">
+                    <option value="">-- Select an Event --</option>
+                </select>
+            </div>
+
             <div class="tabs">
                 <button class="tab active" data-tab="face">Search by Face</button>
                 <button class="tab" data-tab="bib">Search by BIB</button>
@@ -463,6 +513,106 @@
 
     <script>
         const API_BASE = 'http://localhost:8000';
+        
+        // Event pagination state
+        let currentEventId = null;
+        let currentOffset = 0;
+        let isLoadingMore = false;
+        let hasMoreImages = false;
+
+        // Load active events on page load
+        async function loadEvents() {
+            try {
+                const response = await fetch(`${API_BASE}/events`);
+                const data = await response.json();
+                
+                const eventSelect = document.getElementById('event-select');
+                data.events.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.ID;
+                    option.textContent = `${event.Name} - ${event.Date} (${event.TotalImages} photos)`;
+                    eventSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load events:', error);
+            }
+        }
+
+        // Load events when page loads
+        document.addEventListener('DOMContentLoaded', loadEvents);
+
+        // Event selection handler
+        document.getElementById('event-select').addEventListener('change', async (e) => {
+            const eventId = parseInt(e.target.value);
+            if (!eventId) {
+                hideResults();
+                return;
+            }
+            
+            currentEventId = eventId;
+            currentOffset = 0;
+            showLoading();
+            hideError();
+            
+            try {
+                const response = await fetch(`${API_BASE}/event-images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        event_id: eventId,
+                        offset: 0,
+                        limit: 10
+                    })
+                });
+                
+                const data = await response.json();
+                displayResults(data.matches, 'event');
+                hasMoreImages = data.has_more;
+                currentOffset = data.offset + data.count;
+            } catch (error) {
+                showError('Failed to load event images.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Infinite scroll handler
+        window.addEventListener('scroll', async () => {
+            if (!currentEventId || !hasMoreImages || isLoadingMore) return;
+            
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const pageHeight = document.documentElement.scrollHeight;
+            
+            // Load more when user is 200px from bottom
+            if (scrollPosition >= pageHeight - 200) {
+                isLoadingMore = true;
+                
+                try {
+                    const response = await fetch(`${API_BASE}/event-images`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            event_id: currentEventId,
+                            offset: currentOffset,
+                            limit: 10
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    appendResults(data.matches);
+                    hasMoreImages = data.has_more;
+                    currentOffset = data.offset + data.count;
+                } catch (error) {
+                    console.error('Failed to load more images:', error);
+                } finally {
+                    isLoadingMore = false;
+                }
+            }
+        });
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -472,6 +622,12 @@
                 
                 tab.classList.add('active');
                 document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                
+                // Reset event selection when switching tabs
+                currentEventId = null;
+                currentOffset = 0;
+                hasMoreImages = false;
+                document.getElementById('event-select').value = '';
                 
                 hideError();
                 hideResults();
@@ -614,7 +770,11 @@
                 return;
             }
 
-            resultsCount.textContent = `Found ${matches.length} photo${matches.length !== 1 ? 's' : ''}`;
+            if (searchType === 'event') {
+                resultsCount.textContent = `Showing ${matches.length} photo${matches.length !== 1 ? 's' : ''}${hasMoreImages ? ' (scroll for more)' : ''}`;
+            } else {
+                resultsCount.textContent = `Found ${matches.length} photo${matches.length !== 1 ? 's' : ''}`;
+            }
             resultsDiv.classList.add('active');
 
             matches.forEach((match, index) => {
@@ -636,6 +796,36 @@
 
                 gallery.appendChild(card);
             });
+        }
+
+        function appendResults(matches) {
+            const gallery = document.getElementById('gallery');
+            const resultsCount = document.getElementById('results-count');
+            
+            if (!matches || matches.length === 0) return;
+
+            matches.forEach((match, index) => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+
+                const imageUrl = match.ThumbnailUrl ? `${API_BASE}${match.ThumbnailUrl}` : `${API_BASE}/images/${match.FileName}`;
+                
+                card.innerHTML = `
+                    <div class="image-wrapper">
+                        <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
+                        <button class="download-icon" onclick="downloadImage('${imageUrl}', '${match.FileName}')" title="Download ${match.FileName}">
+                            <img src="${API_BASE}/download-icon" alt="⬇" onerror="this.style.display='none'; this.parentElement.innerHTML='⬇';">
+                        </button>
+                    </div>
+                    ${match.Distance !== undefined ? `<div class="image-info"><div class="image-distance">Similarity: ${(1 - match.Distance).toFixed(2)}</div></div>` : ''}
+                `;
+
+                gallery.appendChild(card);
+            });
+
+            // Update count
+            const totalShown = gallery.children.length;
+            resultsCount.textContent = `Showing ${totalShown} photo${totalShown !== 1 ? 's' : ''}${hasMoreImages ? ' (scroll for more)' : ''}`;
         }
 
         function downloadImage(imageUrl, fileName) {
