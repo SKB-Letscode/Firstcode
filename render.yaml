@@ -3,9 +3,13 @@ services:
   - type: web
     name: fmf-face-search-api
     runtime: python
-    plan: free  # Change to 'starter' or higher for production
-    buildCommand: bash render_build.sh
-    startCommand: uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT
+    plan: free  # Change to 'starter' for full features (face search)
+    # For FREE tier: use requirements_minimal.txt and api_services_minimal
+    buildCommand: pip install --no-cache-dir -r requirements_minimal.txt
+    startCommand: uvicorn app.server.api_services_minimal:service --host 0.0.0.0 --port $PORT
+    # For STARTER plan: uncomment below and comment above
+    # buildCommand: bash render_build.sh
+    # startCommand: uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9

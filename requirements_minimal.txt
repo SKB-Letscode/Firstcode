@@ -1,0 +1,24 @@
+# Minimal Requirements for Render Deployment
+# Use this if the full requirements.txt fails due to memory issues
+# This works because your FAISS index and DB are already pre-computed
+
+# Core API and Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+
+# Essential for API
+numpy==1.26.4
+Pillow==10.4.0
+
+# FAISS for search (lightweight binary wheels available)
+faiss-cpu==1.8.0
+
+# AWS Integration (optional, comment out if not using S3)
+# boto3==1.35.0
+
+# Utilities
+requests==2.32.3
+
+# NOTE: face_recognition and dlib are NOT needed at runtime
+# because your FAISS index is already pre-computed
+# You only need these packages when initially creating the index
