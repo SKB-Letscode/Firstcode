@@ -7,6 +7,7 @@
 #   2 - Update LOCAL_IMAGE_FOLDER path to point to that folder
 #====================================================================================
 import os
+import sys
 import sqlite3
 import numpy as np
 import faiss
@@ -14,7 +15,13 @@ import pickle
 import face_recognition
 
 from PIL import Image
-from app.imgTools.imgTools import resize_image
+
+# Add the workspace root to Python path
+workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if workspace_root not in sys.path:
+    sys.path.insert(0, workspace_root)
+
+from app.imgTools.imgTools import resize_image  
 
 from app.dbconnector import LOCAL_IMAGE_FOLDER,local_db_path,local_index_path,local_meta_path,LOCAL_IMAGE_FOLDER
 

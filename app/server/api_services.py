@@ -37,7 +37,8 @@ class EventImagesRequest(BaseModel):
 
 # Base image location for thumbnails
 workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images", "Downloads", "Thumbnails")
+# THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images", "Downloads", "Thumbnails")
+THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
 # Used for resizing images
 MAX_DIM = 800

@@ -321,17 +321,22 @@
 
         .download-icon {
             position: absolute;
-            top: 2px;
-            right: 2px;
-            background: transparent;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(231, 199, 18, 0.747);
             border: none;
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             cursor: pointer;
             transition: all 0.2s ease;
-            opacity: 0.8;
+            opacity: 0;
             z-index: 10;
-            padding: 0;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .download-icon img {
@@ -345,12 +350,12 @@
         }
 
         .download-icon:hover {
-            /* background: rgba(0, 0, 0, 0.8); */
-            transform: scale(1.1);
+            background: rgba(230, 171, 9, 0.9);
+            transform: translate(-50%, -50%) scale(1.15);
         }
 
         .no-results {
-            background: white;
+            background: rgb(255, 255, 255);
             border-radius: 15px;
             padding: 60px 30px;
             text-align: center;
@@ -401,6 +406,49 @@
                 padding: 10px;
             }
 
+            .search-panel {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .tabs {
+                gap: 5px;
+                margin-bottom: 15px;
+            }
+
+            .tab {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .form-group label {
+                margin-bottom: 5px;
+                font-size: 0.9rem;
+            }
+
+            .form-group input[type="text"],
+            .event-select {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+
+            .file-upload {
+                padding: 15px;
+            }
+
+            .file-upload-label {
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                padding: 12px 24px;
+                font-size: 0.9rem;
+            }
+
             .gallery {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 8px;
@@ -428,10 +476,9 @@
             }
 
             .download-icon {
-                width: 24px;
-                height: 24px;
-                top: 6px;
-                right: 2px;
+                width: 32px;
+                height: 32px;
+                padding: 2px;
             }
         }
     </style>
