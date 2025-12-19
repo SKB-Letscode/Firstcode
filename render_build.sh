@@ -3,6 +3,10 @@
 
 set -e
 
+echo "=== Installing system dependencies ==="
+apt-get update
+apt-get install -y cmake build-essential
+
 echo "=== Upgrading pip ==="
 pip install --upgrade pip setuptools wheel
 
@@ -13,8 +17,10 @@ pip install --no-cache-dir fastapi==0.115.0
 pip install --no-cache-dir "uvicorn[standard]==0.30.0"
 pip install --no-cache-dir requests==2.32.3
 
+echo "=== Verifying cmake installation ==="
+cmake --version
+
 echo "=== Installing dlib (may take 5-10 minutes) ==="
-pip install --no-cache-dir cmake
 pip install --no-cache-dir dlib==19.24.6
 
 echo "=== Installing face recognition ==="
