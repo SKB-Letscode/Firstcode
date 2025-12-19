@@ -1,0 +1,18 @@
+[build]
+buildCommand = "pip install --no-cache-dir -r requirements.txt"
+
+[build.env]
+PYTHON_VERSION = "3.11.9"
+
+[[services]]
+type = "web"
+name = "fmf-face-search-api"
+runtime = "python3"
+plan = "starter"
+buildCommand = "pip install --no-cache-dir -r requirements.txt"
+startCommand = "uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT"
+
+[services.env]
+DB_FOLDER = "/opt/render/project/src/DB"
+IMAGE_FOLDER = "/opt/render/project/src/Images"
+PYTHON_VERSION = "3.11.9"

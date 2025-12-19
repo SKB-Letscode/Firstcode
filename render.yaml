@@ -4,7 +4,7 @@ services:
     name: fmf-face-search-api
     runtime: python
     plan: starter  # Starter plan for full features
-    buildCommand: bash render_build.sh
+    buildCommand: pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
