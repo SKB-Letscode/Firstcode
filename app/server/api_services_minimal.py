@@ -10,6 +10,15 @@ import os
 import sqlite3
 import pickle
 
+# Download files from S3 on startup (for Render deployment)
+print("Checking for S3 files...")
+if not os.path.exists(os.getenv('DB_FOLDER', '/opt/render/project/src/DB') + '/1_ImageDB.sqlite'):
+    print("DB files not found locally, downloading from S3...")
+    from app.s3_downloader import download_from_s3
+    download_from_s3()
+else:
+    print("DB files found locally, skipping S3 download")
+
 # Request model for BIB search
 class BibSearchRequest(BaseModel):
     bib_number: str

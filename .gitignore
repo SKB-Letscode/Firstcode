@@ -8,22 +8,22 @@ venv/
 env/
 ENV/
 
-# Database
-*.sqlite
-*.db
-DB/*.sqlite
-DB/*.bin
-DB/*.pkl
+# Database - Comment out to include in deployment
+# *.sqlite
+# *.db
+# DB/*.sqlite
+# DB/*.bin
+# DB/*.pkl
 
 # Environment variables
 .env
 
-# Images
-Images/
-*.jpg
-*.jpeg
-*.png
-*.gif
+# Images - Comment out to include in deployment  
+# Images/
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
 
 # IDE
 .vscode/

@@ -14,8 +14,8 @@ Pillow==10.4.0
 # FAISS for search (lightweight binary wheels available)
 faiss-cpu==1.9.0.post1
 
-# AWS Integration (optional, comment out if not using S3)
-# boto3==1.35.0
+# AWS Integration (required for S3 file download)
+boto3==1.35.0
 
 # Utilities
 requests==2.32.3
