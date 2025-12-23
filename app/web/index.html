@@ -14,7 +14,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: rgb(240, 228, 176);
+            background: rgb(255, 255, 255);
             min-height: 100vh;
             padding: 20px;
         }
@@ -30,7 +30,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
             text-align: center;
         }
 
@@ -41,10 +41,8 @@
         }
 
         .header-logo {
-            width: 450px;
+            width: 280px;
             height: auto;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .header h1 {
@@ -57,6 +55,100 @@
 
         .header p {
             font-size: 0.9rem;
+        }
+
+        /* Burger Menu Styles */
+        .burger-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .burger-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .burger-icon:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+
+        .burger-icon span {
+            width: 24px;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .burger-icon.active span:nth-child(1) {
+            transform: rotate(45deg) translate(7px, 7px);
+        }
+
+        .burger-icon.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .burger-icon.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
+        .menu-dropdown {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 10px 0;
+            min-width: 200px;
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-dropdown.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .menu-item {
+            display: block;
+            padding: 12px 20px;
+            color: #333;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: #f5f5f5;
+            border-left-color: #667eea;
+            padding-left: 24px;
         }
 
         .search-panel {
@@ -86,8 +178,8 @@
         }
 
         .tab.active {
-            color: #D4AF37;
-            border-bottom-color: #D4AF37;
+            color: #667eea;
+            border-bottom-color: #667eea;
             font-weight: 600;
         }
 
@@ -113,29 +205,32 @@
         .form-group input[type="text"] {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #e8e8e8;
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .form-group input[type="text"]:focus {
             outline: none;
-            border-color: #D4AF37;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .file-upload {
-            border: 2px dashed #e0e0e0;
+            border: 2px dashed #e8e8e8;
             border-radius: 8px;
             padding: 30px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .file-upload:hover {
-            border-color: #D4AF37;
-            background: rgba(212, 175, 55, 0.1);
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
         }
 
         .file-upload input[type="file"] {
@@ -150,14 +245,14 @@
         .event-select {
             width: 100%;
             padding: 12px 40px 12px 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #e8e8e8;
             border-radius: 8px;
             font-size: 1rem;
-            background: white;
+            background: rgba(255, 255, 255, 0.9);
             cursor: pointer;
             transition: border-color 0.3s, box-shadow 0.3s;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23D4AF37' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 12px center;
             background-size: 16px;
@@ -165,12 +260,12 @@
 
         .event-select:focus {
             outline: none;
-            border-color: #D4AF37;
-            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .event-select:hover {
-            border-color: #D4AF37;
+            border-color: #667eea;
         }
 
         .event-select option {
@@ -178,7 +273,7 @@
         }
 
         .btn {
-            background: linear-gradient(135deg, #E5C100 0%, #D4AF37 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             padding: 14px 32px;
@@ -186,12 +281,14 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.3s;
             width: 100%;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         .btn:disabled {
@@ -212,7 +309,7 @@
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #D4AF37;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -258,26 +355,26 @@
         }
 
         .image-card {
-            background: rgb(220, 205, 155);
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             transition: all 0.3s ease;
             position: relative;
-            border: 2px solid transparent;
+            border: 2px solid rgba(102, 126, 234, 0.1);
         }
 
         .image-card:hover {
             transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 12px 35px rgba(255, 152, 0, 0.25);
-            border-color: rgba(255, 152, 0, 0.3);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
         }
 
         .image-wrapper {
             position: relative;
             width: 100%;
             height: 160px;
-            background: linear-gradient(135deg, rgb(215, 200, 150) 0%, rgb(205, 190, 140) 100%);
+            background: rgba(255, 255, 255, 0.5);
             padding: 12px;
             box-sizing: border-box;
         }
@@ -291,7 +388,7 @@
 
         .image-info {
             padding: 12px;
-            background: linear-gradient(to bottom, rgb(220, 205, 155), rgb(210, 195, 145));
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .image-name {
@@ -324,7 +421,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(231, 199, 18, 0.747);
+            background: rgba(102, 126, 234, 0.85);
             border: none;
             width: 40px;
             height: 40px;
@@ -350,7 +447,7 @@
         }
 
         .download-icon:hover {
-            background: rgba(230, 171, 9, 0.9);
+            background: rgba(118, 75, 162, 0.95);
             transform: translate(-50%, -50%) scale(1.15);
         }
 
@@ -383,6 +480,10 @@
 
         /* Responsive design */
         @media (max-width: 768px) {
+            .header {
+                gap: 5px;
+            }
+
             .header h1 {
                 font-size: 1.8rem;
             }
@@ -472,7 +573,7 @@
             }
 
             .header-logo {
-                width: 250px;
+                width: 180px;
             }
 
             .download-icon {
@@ -484,10 +585,23 @@
     </style>
 </head>
 <body>
+    <!-- Burger Menu -->
+    <div class="burger-menu">
+        <button class="burger-icon" id="burger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="menu-dropdown" id="menu-dropdown">
+            <a href="#" class="menu-item" onclick="showComingSoon('Home')">🏠 Home</a>
+            <a href="#" class="menu-item" onclick="showComingSoon('Shoots')">📸 Shoots</a>
+            <a href="#" class="menu-item" onclick="showComingSoon('About')">ℹ️ About</a>
+        </div>
+    </div>
     <div class="container">
-        
         <div class="header">
             <img src="https://fmf-face-search-api.onrender.com/logo" alt="ShootinStudio Logo" class="header-logo">
+             <!-- <img src="http://127.0.0.1:8000/logo" alt="ShootinStudio Logo" class="header-logo"> --> -->
             <div class="header-content">
                 <h1>🔍 Find My Photos</h1>
                 <!-- <p>Search by face or BIB number</p> -->
@@ -560,8 +674,29 @@
 
     <script>
         // const API_BASE = 'http://localhost:8000';       
-        // const API_BASE = 'http://127.0.0.1:8000'
-        const API_BASE = 'https://fmf-face-search-api.onrender.com';
+        const API_BASE = 'http://127.0.0.1:8000'
+        // const API_BASE = 'https://fmf-face-search-api.onrender.com';
+        
+        // Burger menu toggle
+        document.getElementById('burger-btn').addEventListener('click', function() {
+            this.classList.toggle('active');
+            document.getElementById('menu-dropdown').classList.toggle('active');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const burgerMenu = document.querySelector('.burger-menu');
+            if (!burgerMenu.contains(event.target)) {
+                document.getElementById('burger-btn').classList.remove('active');
+                document.getElementById('menu-dropdown').classList.remove('active');
+            }
+        });
+
+        // Coming Soon alert
+        function showComingSoon(pageName) {
+            alert(`${pageName} page - Coming Soon! 🚀`);
+        }
+
         // Event pagination state
         let currentEventId = null;
         let currentOffset = 0;

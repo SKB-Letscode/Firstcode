@@ -98,7 +98,7 @@ def get_image(filename: str):
 @service.get("/logo")
 def get_logo():
     """Serve the logo image"""
-    logo_path = os.path.join(workspace_root, "Images", "support", "SiS_logo_Banner.png")
+    logo_path = os.path.join(workspace_root, "Images", "support", "SIS_Logo_Black_Text.png")
     print(f"\n=== /logo endpoint called ===")
     print(f"Logo path: {logo_path}")
     print(f"Logo exists: {os.path.exists(logo_path)}")
