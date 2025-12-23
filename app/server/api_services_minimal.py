@@ -235,6 +235,7 @@ async def get_event_images(request: EventImagesRequest):
             "total": total,
             "offset": request.offset,
             "limit": request.limit,
+            "count": len(results),
             "hasMore": (request.offset + request.limit) < total
         }
     except Exception as e:

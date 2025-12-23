@@ -560,8 +560,8 @@
 
     <script>
         // const API_BASE = 'http://localhost:8000';       
-        const API_BASE = 'http://127.0.0.1:8000'
-        // const API_BASE = 'https://fmf-face-search-api.onrender.com';
+        // const API_BASE = 'http://127.0.0.1:8000'
+        const API_BASE = 'https://fmf-face-search-api.onrender.com';
         // Event pagination state
         let currentEventId = null;
         let currentOffset = 0;
@@ -617,7 +617,7 @@
                 
                 const data = await response.json();
                 displayResults(data.matches, 'event');
-                hasMoreImages = data.has_more;
+                hasMoreImages = data.hasMore;
                 currentOffset = data.offset + data.count;
             } catch (error) {
                 showError('Failed to load event images.');
@@ -652,7 +652,7 @@
                     
                     const data = await response.json();
                     appendResults(data.matches);
-                    hasMoreImages = data.has_more;
+                    hasMoreImages = data.hasMore;
                     currentOffset = data.offset + data.count;
                 } catch (error) {
                     console.error('Failed to load more images:', error);
