@@ -3,9 +3,14 @@ services:
   - type: web
     name: fmf-face-search-api
     runtime: python
-    plan: starter  # Starter plan for full features
-    buildCommand: pip install --no-cache-dir -r requirements.txt
-    startCommand: uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT
+    plan: starter
+    # OPTION 1: Minimal build (no face search, works reliably)
+    buildCommand: pip install --no-cache-dir -r requirements_minimal.txt
+    startCommand: uvicorn app.server.api_services_minimal:service --host 0.0.0.0 --port $PORT
+    # OPTION 2: Full build (requires Docker - see Dockerfile)
+    # Use this if you want face search - switch to Docker deployment in Render
+    # buildCommand: pip install --no-cache-dir -r requirements.txt
+    # startCommand: uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
