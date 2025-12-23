@@ -99,8 +99,15 @@ def get_image(filename: str):
 def get_logo():
     """Serve the logo image"""
     logo_path = os.path.join(workspace_root, "Images", "support", "SiS_logo_Banner.png")
+    print(f"\n=== /logo endpoint called ===")
+    print(f"Logo path: {logo_path}")
+    print(f"Logo exists: {os.path.exists(logo_path)}")
     if os.path.exists(logo_path):
         return FileResponse(logo_path)
+    # List what's in the support folder
+    support_folder = os.path.join(workspace_root, "Images", "support")
+    if os.path.exists(support_folder):
+        print(f"Support folder contents: {os.listdir(support_folder)}")
     return {"error": "Logo not found", "path": logo_path}
 
 @service.get("/download-icon")
@@ -152,14 +159,36 @@ async def search_bib(request: BibSearchRequest):
 @service.get("/events")
 async def get_events():
     """Get list of all events"""
+    print(f"\n=== /events endpoint called ===")
+    print(f"DB path: {local_db_path}")
+    print(f"DB exists: {os.path.exists(local_db_path)}")
+    
     try:
         conn = sqlite3.connect(local_db_path)
         cursor = conn.cursor()
+        
+        # Check if table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='TM_Images'")
+        table_exists = cursor.fetchone()
+        print(f"TM_Images table exists: {table_exists is not None}")
+        
+        if not table_exists:
+            conn.close()
+            return {"error": "TM_Images table not found", "events": []}
+        
         cursor.execute("SELECT DISTINCT EventID FROM TM_Images ORDER BY EventID")
-        events = [{"EventID": row[0], "EventName": f"Event {row[0]}"} for row in cursor.fetchall()]
+        rows = cursor.fetchall()
+        print(f"Found {len(rows)} events: {rows}")
+        
+        events = [{"EventID": row[0], "EventName": f"Event {row[0]}"} for row in rows]
         conn.close()
+        
+        print(f"Returning events: {events}")
         return {"events": events}
     except Exception as e:
+        print(f"Error in /events: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"error": str(e), "events": []}
 
 @service.post("/event-images")
