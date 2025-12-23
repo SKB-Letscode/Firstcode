@@ -158,7 +158,7 @@ async def search_bib(request: BibSearchRequest):
 
 @service.get("/events")
 async def get_events():
-    """Get list of all events"""
+    """Get list of all events from TM_Events table"""
     print(f"\n=== /events endpoint called ===")
     print(f"DB path: {local_db_path}")
     print(f"DB exists: {os.path.exists(local_db_path)}")
@@ -167,20 +167,26 @@ async def get_events():
         conn = sqlite3.connect(local_db_path)
         cursor = conn.cursor()
         
-        # Check if table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='TM_Images'")
+        # Check if TM_Events table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='TM_Events'")
         table_exists = cursor.fetchone()
-        print(f"TM_Images table exists: {table_exists is not None}")
+        print(f"TM_Events table exists: {table_exists is not None}")
         
         if not table_exists:
             conn.close()
-            return {"error": "TM_Images table not found", "events": []}
+            return {"error": "TM_Events table not found", "events": []}
         
-        cursor.execute("SELECT DISTINCT EventID FROM TM_Images ORDER BY EventID")
+        # Query TM_Events table for event details
+        cursor.execute("SELECT ID, Name, Date, TotalImages FROM TM_Events ORDER BY ID")
         rows = cursor.fetchall()
         print(f"Found {len(rows)} events: {rows}")
         
-        events = [{"EventID": row[0], "EventName": f"Event {row[0]}"} for row in rows]
+        events = [{
+            "ID": row[0],
+            "Name": row[1],
+            "Date": row[2],
+            "TotalImages": row[3]
+        } for row in rows]
         conn.close()
         
         print(f"Returning events: {events}")
