@@ -27,6 +27,17 @@ THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 # DB paths
 from app.dbconnector import local_db_path
 
+# Print paths for debugging on Render
+print(f"\n=== Path Configuration ===")
+print(f"Workspace root: {workspace_root}")
+print(f"Thumbnails folder: {THUMBNAILS_FOLDER}")
+print(f"DB path: {local_db_path}")
+print(f"DB exists: {os.path.exists(local_db_path)}")
+print(f"Images folder exists: {os.path.exists(THUMBNAILS_FOLDER)}")
+if os.path.exists(THUMBNAILS_FOLDER):
+    print(f"Images folder contents: {len(os.listdir(THUMBNAILS_FOLDER))} items")
+print(f"========================\n")
+
 service = FastAPI(title="Face Search API - BIB Only")
 
 # Enable CORS
@@ -56,7 +67,16 @@ def read_root():
 
 @service.get("/health")
 def health_check():
-    return {"status": "ok", "mode": "BIB search only"}
+    """Health check with path verification"""
+    return {
+        "status": "ok",
+        "mode": "BIB search only",
+        "db_path": local_db_path,
+        "db_exists": os.path.exists(local_db_path),
+        "images_folder": THUMBNAILS_FOLDER,
+        "images_exists": os.path.exists(THUMBNAILS_FOLDER),
+        "workspace_root": workspace_root
+    }
 
 @service.get("/images/{filename}")
 def get_image(filename: str):

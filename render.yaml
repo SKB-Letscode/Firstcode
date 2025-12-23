@@ -14,6 +14,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: DB_FOLDER
+        value: /opt/render/project/src/DB
+      - key: IMAGE_FOLDER
+        value: /opt/render/project/src/Images
       - key: AWS_ACCESS_KEY_ID
         sync: false  # Set in Render dashboard
       - key: AWS_SECRET_ACCESS_KEY
