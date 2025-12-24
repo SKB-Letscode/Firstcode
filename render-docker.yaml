@@ -1,0 +1,24 @@
+services:
+  # FastAPI Backend Service using Pre-built Docker Image
+  - type: web
+    name: fmf-face-search-api
+    runtime: docker
+    plan: starter
+    # Use pre-built image from Docker Hub (MUCH FASTER!)
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    envVars:
+      - key: DB_FOLDER
+        value: /opt/render/project/src/DB
+      - key: IMAGE_FOLDER
+        value: /opt/render/project/src/Images
+      - key: S3_BUCKET_NAME
+        value: sara-s3-bucket
+      - key: AWS_DEFAULT_REGION
+        value: us-east-1
+      - key: AWS_ACCESS_KEY_ID
+        sync: false  # Set in Render dashboard
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false  # Set in Render dashboard
+    healthCheckPath: /health
+    autoDeploy: true

@@ -268,12 +268,12 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
                     conn.close()
                     
                     if img_info:
-                        # Extract thumbnail filename from FilePath
-                        thumbnail_name = os.path.basename(img_info[1])
+                        # Use FileName directly (not FilePath which contains full Windows path)
+                        file_name = img_info[0]  # This is just the filename like "SKB_4219.JPG"
                         results.append({
-                            "FileName": img_info[0],
+                            "FileName": file_name,
                             "FilePath": img_info[1],
-                            "ThumbnailUrl": f"/images/{thumbnail_name}",
+                            "ThumbnailUrl": f"/images/{file_name}",
                             "Distance": dist
                         })
         
