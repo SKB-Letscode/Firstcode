@@ -12,6 +12,7 @@ numpy==1.26.4
 
 # Image Processing
 Pillow==10.4.0
+opencv-python-headless==4.10.0.84
 
 # Face Recognition - Memory optimized
 # Note: dlib is heavy but required for face_recognition
