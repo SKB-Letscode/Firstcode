@@ -1,5 +1,12 @@
-# Alternative: Deploy without Face Search (BIB Search Only)
-# This removes face_recognition dependency to avoid memory issues
+#====================================================================================
+# Author: Sara / Vo Pilot 
+# Created on: 21 Nov 2025
+# Brief: Alternative: Deploy without Face Search (BIB Search Only)
+#        This removes face_recognition dependency to avoid memory issues
+# 18-Dec-2025 : Added event-images APIs and pagination support
+# uvicorn app.server.api_services_minimal:service --reload
+#====================================================================================
+
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
