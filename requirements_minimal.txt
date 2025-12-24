@@ -1,17 +1,25 @@
-# Minimal Requirements for Render Deployment
-# Use this if the full requirements.txt fails due to memory issues
-# This works because your FAISS index and DB are already pre-computed
+# Requirements for Render Deployment with Face Search
+# Optimized for Starter Plan (512MB RAM)
+# Updated: 24-Dec-2025 - Added face_recognition support
 
 # Core API and Web Framework
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
 python-multipart
 
-# Essential for API
+# Essential - Install numpy first (required by other packages)
 numpy==1.26.4
+
+# Image Processing
 Pillow==10.4.0
 
-# FAISS for search (lightweight binary wheels available)
+# Face Recognition - Memory optimized
+# Note: dlib is heavy but required for face_recognition
+dlib==19.24.6
+face_recognition_models==0.3.0
+face_recognition==1.3.0
+
+# FAISS for vector search
 faiss-cpu==1.9.0.post1
 
 # AWS Integration (required for S3 file download)
@@ -20,6 +28,11 @@ boto3==1.35.0
 # Utilities
 requests==2.32.3
 
-# NOTE: face_recognition and dlib are NOT needed at runtime
-# because your FAISS index is already pre-computed
-# You only need these packages when initially creating the index
+# IMPORTANT NOTES:
+# 1. The FAISS index and face encodings are pre-computed and stored in S3
+# 2. face_recognition is only used at runtime to encode uploaded selfies
+# 3. Memory usage is optimized by:
+#    - Resizing images before processing (MAX_DIM=800)
+#    - Lazy loading face_recognition only when needed
+#    - Using distance threshold to limit results
+# 4. Render Starter plan (512MB) should be sufficient with these optimizations

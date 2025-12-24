@@ -4,6 +4,7 @@
 # Brief: Alternative: Deploy without Face Search (BIB Search Only)
 #        This removes face_recognition dependency to avoid memory issues
 # 18-Dec-2025 : Added event-images APIs and pagination support
+# 24-Dec-2025 : Added face search feature with memory optimizations for Render Starter
 # uvicorn app.server.api_services_minimal:service --reload
 #====================================================================================
 
@@ -16,6 +17,8 @@ from pydantic import BaseModel
 import os
 import sqlite3
 import pickle
+import numpy as np
+import faiss
 
 # Download files from S3 on startup (for Render deployment)
 print("Checking for S3 files...")
@@ -41,7 +44,7 @@ workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "
 THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
 # DB paths
-from app.dbconnector import local_db_path
+from app.dbconnector import local_db_path, local_index_path, local_meta_path
 
 # Print paths for debugging on Render
 print(f"\n=== Path Configuration ===")
@@ -49,12 +52,35 @@ print(f"Workspace root: {workspace_root}")
 print(f"Thumbnails folder: {THUMBNAILS_FOLDER}")
 print(f"DB path: {local_db_path}")
 print(f"DB exists: {os.path.exists(local_db_path)}")
+print(f"Index path: {local_index_path}")
+print(f"Index exists: {os.path.exists(local_index_path)}")
+print(f"Meta path: {local_meta_path}")
+print(f"Meta exists: {os.path.exists(local_meta_path)}")
 print(f"Images folder exists: {os.path.exists(THUMBNAILS_FOLDER)}")
 if os.path.exists(THUMBNAILS_FOLDER):
     print(f"Images folder contents: {len(os.listdir(THUMBNAILS_FOLDER))} items")
 print(f"========================\n")
 
-service = FastAPI(title="Face Search API - BIB Only")
+# Load FAISS index and metadata
+try:
+    print("Loading FAISS index and metadata...")
+    index = faiss.read_index(local_index_path)
+    with open(local_meta_path, 'rb') as f:
+        face_ids = pickle.load(f)
+    print(f"Successfully loaded FAISS index with {index.ntotal} faces")
+    FACE_SEARCH_ENABLED = True
+except Exception as e:
+    print(f"Warning: Could not load FAISS index: {e}")
+    print("Face search will be disabled")
+    FACE_SEARCH_ENABLED = False
+    index = None
+    face_ids = None
+
+# Configuration for face search
+MAX_DIM = 800  # Resize images to reduce memory usage
+DISTANCE_THRESHOLD = 0.19  # Only return matches with distance <= this value
+
+service = FastAPI(title="Face Search API - Full Featured")
 
 # Enable CORS
 service.add_middleware(
@@ -86,7 +112,8 @@ def health_check():
     """Health check with path verification"""
     return {
         "status": "ok",
-        "mode": "BIB search only",
+        "mode": "Full featured (Face + BIB search)" if FACE_SEARCH_ENABLED else "BIB search only",
+        "face_search_enabled": FACE_SEARCH_ENABLED,
         "db_path": local_db_path,
         "db_exists": os.path.exists(local_db_path),
         "images_folder": THUMBNAILS_FOLDER,
@@ -127,11 +154,96 @@ def get_download_icon():
 
 @service.post("/search-face")
 async def search_face(file: UploadFile = File(...), top_k: int = 5):
-    """Face search disabled in this deployment due to memory constraints"""
-    return {
-        "error": "Face search temporarily disabled. Please upgrade to Starter plan for full functionality.",
-        "message": "Use BIB search instead"
-    }
+    """
+    Search for faces in uploaded image
+    
+    Args:
+        file: Uploaded image file containing a face
+        top_k: Number of top matches to return (default: 5)
+    
+    Returns:
+        JSON with list of matching images
+    """
+    if not FACE_SEARCH_ENABLED:
+        return {
+            "error": "Face search is not available",
+            "message": "FAISS index not loaded. Please use BIB search instead.",
+            "matches": []
+        }
+    
+    temp_path = f"temp_{file.filename}"
+    try:
+        # Save uploaded file
+        with open(temp_path, "wb") as f:
+            f.write(await file.read())
+        
+        # Import face_recognition only when needed to save memory
+        import face_recognition
+        from app.imgTools.imgTools import resize_image
+        
+        # Resize image to reduce memory usage
+        try:
+            img = resize_image(temp_path, MAX_DIM)
+        except Exception:
+            # Fallback to loading original if resize fails
+            img = face_recognition.load_image_file(temp_path)
+        
+        # Extract face encodings
+        uploaded_faces = face_recognition.face_encodings(img)
+        
+        if len(uploaded_faces) == 0:
+            return {
+                "error": "No face detected in the uploaded image",
+                "message": "Please upload a clear image with a visible face",
+                "matches": []
+            }
+        
+        results = []
+        
+        # Search for each detected face
+        for face_emb in uploaded_faces:
+            face_emb = np.expand_dims(face_emb.astype('float32'), axis=0)
+            distances, indices = index.search(face_emb, top_k)
+            
+            for j, i in enumerate(indices[0]):
+                dist = float(distances[0][j])
+                
+                # Only include matches at or below the threshold
+                if dist <= DISTANCE_THRESHOLD:
+                    matched_face_id = face_ids[i]
+                    conn = sqlite3.connect(local_db_path)
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT TM_Images.FileName, TM_Images.FilePath
+                        FROM TM_Faces
+                        JOIN TM_Images ON TM_Faces.ImageID = TM_Images.ID
+                        WHERE TM_Faces.FaceID = ?
+                    """, (matched_face_id,))
+                    img_info = cursor.fetchone()
+                    conn.close()
+                    
+                    if img_info:
+                        # Extract thumbnail filename from FilePath
+                        thumbnail_name = os.path.basename(img_info[1])
+                        results.append({
+                            "FileName": img_info[0],
+                            "FilePath": img_info[1],
+                            "ThumbnailUrl": f"/images/{thumbnail_name}",
+                            "Distance": dist
+                        })
+        
+        return {"matches": results}
+    
+    except Exception as e:
+        return {
+            "error": f"Face search failed: {str(e)}",
+            "matches": []
+        }
+    
+    finally:
+        # Clean up temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 @service.post("/search-bib")
 async def search_bib(request: BibSearchRequest):
