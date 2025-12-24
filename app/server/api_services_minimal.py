@@ -171,22 +171,67 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
             "matches": []
         }
     
-    temp_path = f"temp_{file.filename}"
+    temp_path = None
     try:
-        # Save uploaded file
-        with open(temp_path, "wb") as f:
-            f.write(await file.read())
-        
-        # Import face_recognition only when needed to save memory
+        # Import required libraries
         import face_recognition
-        from app.imgTools.imgTools import resize_image
+        from PIL import Image
+        import io
         
-        # Resize image to reduce memory usage
+        # Debug: Print file details
+        print(f"\n=== Face Search Request ===")
+        print(f"Filename: {file.filename}")
+        print(f"Content-Type: {file.content_type}")
+        
+        # Read uploaded file content
+        content = await file.read()
+        content_len = len(content)
+        
+        print(f"Received {content_len} bytes")
+        
+        # Verify content was received and is a reasonable size
+        if not content or content_len == 0:
+            return {
+                "error": "Empty file received",
+                "message": "The uploaded file appears to be empty",
+                "matches": []
+            }
+        
+        # Check if file is suspiciously small (likely not a real image)
+        if content_len < 1000:  # Real JPG/PNG images are typically > 1KB
+            return {
+                "error": "File too small",
+                "message": f"Received only {content_len} bytes. Please ensure you're uploading a valid image file (not just a filename or reference).",
+                "matches": []
+            }
+        
+        # Try to open and process image directly from bytes
         try:
-            img = resize_image(temp_path, MAX_DIM)
-        except Exception:
-            # Fallback to loading original if resize fails
-            img = face_recognition.load_image_file(temp_path)
+            # Open image from bytes
+            img_bytes = io.BytesIO(content)
+            pil_img = Image.open(img_bytes)
+            print(f"✓ Image opened: format={pil_img.format}, size={pil_img.size}, mode={pil_img.mode}")
+            
+            # Convert to RGB if needed
+            if pil_img.mode != 'RGB':
+                pil_img = pil_img.convert('RGB')
+                print(f"✓ Converted to RGB")
+            
+            # Resize to reduce memory usage
+            pil_img.thumbnail((MAX_DIM, MAX_DIM), Image.LANCZOS)
+            print(f"✓ Resized to max {MAX_DIM}px")
+            
+            # Convert to numpy array for face_recognition
+            img = np.array(pil_img)
+            print(f"✓ Converted to numpy array: shape={img.shape}")
+            
+        except Exception as e:
+            print(f"✗ Failed to process image from bytes: {e}")
+            return {
+                "error": f"Invalid image file: {str(e)}",
+                "message": "Could not open the uploaded file. Please ensure it's a valid JPG or PNG image.",
+                "matches": []
+            }
         
         # Extract face encodings
         uploaded_faces = face_recognition.face_encodings(img)
@@ -241,9 +286,13 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
         }
     
     finally:
-        # Clean up temp file
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        # Clean up temp file if it was created
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+                print(f"Cleaned up temp file: {temp_path}")
+            except Exception as e:
+                print(f"Failed to remove temp file {temp_path}: {e}")
 
 @service.post("/search-bib")
 async def search_bib(request: BibSearchRequest):

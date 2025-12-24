@@ -13,10 +13,17 @@ from PIL import Image
 # Small funtion to resize image during face identification process for fast performance
 def resize_image(img_path, max_dim):
     # Open image, scale down preserving aspect ratio and return RGB numpy array
-    img = Image.open(img_path).convert('RGB')
-    img.thumbnail((max_dim, max_dim), Image.LANCZOS)
-    return np.array(img)
-
+    if not os.path.exists(img_path):
+        raise FileNotFoundError(f"Image file not found at: {img_path}")
+    
+    try:
+        with Image.open(img_path) as img:
+            img = img.convert('RGB')
+            img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+            return np.array(img)
+    except Exception as e:
+        print(f"Error resizing image {img_path}: {e}")
+        raise Exception(f"Failed to open/resize image: {str(e)}")   
 
 # Methods to deal with AWS S3 bucket
 
