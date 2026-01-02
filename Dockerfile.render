@@ -1,9 +1,9 @@
 # Use pre-built image from Docker Hub
 # This makes deployments 10x faster!
 # Replace 'yourusername' with your Docker Hub username
-FROM yourusername/fmf-api:latest
+FROM skbletscode/fmf-api:latest
 
-# Copy only the application code (dependencies already in base image)
+# Copy only the application code (dependencies already in base ima  ge)
 COPY app ./app
 COPY DB ./DB
 COPY Images ./Images
