@@ -1,19 +1,12 @@
 services:
-  # FastAPI Backend Service
+  # FastAPI Backend Service using Pre-built Docker Image
   - type: web
-    name: fmf-face-search-api
-    runtime: python
+    name: fmf-face-search-api-docker
+    runtime: docker
     plan: starter
-    # OPTION 1: Minimal build (no face search, works reliably)
-    buildCommand: pip install --no-cache-dir -r requirements_minimal.txt
-    startCommand: uvicorn app.server.api_services_minimal:service --host 0.0.0.0 --port $PORT
-    # OPTION 2: Full build (requires Docker - see Dockerfile)
-    # Use this if you want face search - switch to Docker deployment in Render
-    # buildCommand: pip install --no-cache-dir -r requirements.txt
-    # startCommand: uvicorn app.server.api_services:service --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
       - key: DB_FOLDER
         value: /opt/render/project/src/DB
       - key: IMAGE_FOLDER
@@ -26,13 +19,5 @@ services:
         sync: false  # Set in Render dashboard
       - key: AWS_SECRET_ACCESS_KEY
         sync: false  # Set in Render dashboard
-      - key: AWS_DEFAULT_REGION
-        value: us-east-1  # Change to your region
-      - key: S3_BUCKET_NAME
-        value: sara-s3-bucket
-      - key: DB_FOLDER
-        value: /tmp/DB
-      - key: IMAGE_FOLDER
-        value: /tmp/Images
     healthCheckPath: /health
     autoDeploy: true
