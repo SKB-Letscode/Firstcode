@@ -46,6 +46,12 @@ class EventImagesRequest(BaseModel):
 workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
+
+# Local sub folders 
+THUMBNAILS_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Thumbnails")
+LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Images")
+
+
 # DB paths
 from app.dbconnector import local_db_path, local_index_path, local_meta_path,local_sis_events_db_path,LOCAL_THUMBNAIL_FOLDER
 
