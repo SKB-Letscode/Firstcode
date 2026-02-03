@@ -39,7 +39,7 @@ local_meta_path = os.path.join(local_db_folder, META_FILE)
 
 # Local sub folders 
 LOCAL_THUMBNAIL_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Thumbnails")
-LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Events\\" + str(EventID) + r"\Images")
+LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Images")
 
 # Initialize DB
 def init_db():
