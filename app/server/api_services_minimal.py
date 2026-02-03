@@ -20,6 +20,9 @@ import pickle
 import numpy as np
 import faiss
 
+# Data configuration may get changed later
+EventID = 1
+
 # Download files from S3 on startup (for Render deployment)
 print("Checking for S3 files...")
 if not os.path.exists(os.getenv('DB_FOLDER', '/opt/render/project/src/DB') + '/1_ImageDB.sqlite'):
@@ -44,7 +47,7 @@ workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "
 THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
 # DB paths
-from app.dbconnector import local_db_path, local_index_path, local_meta_path
+from app.dbconnector import local_db_path, local_index_path, local_meta_path,local_sis_events_db_path,LOCAL_THUMBNAIL_FOLDER
 
 # Print paths for debugging on Render
 print(f"\n=== Path Configuration ===")
@@ -326,37 +329,37 @@ async def search_bib(request: BibSearchRequest):
 
 @service.get("/events")
 async def get_events():
-    """Get list of all events from TM_Events table"""
+    """Get list of all events from SIS_EVENTS_DB . TM_Events table"""
     print(f"\n=== /events endpoint called ===")
-    print(f"DB path: {local_db_path}")
-    print(f"DB exists: {os.path.exists(local_db_path)}")
+    print(f"DB path: {local_sis_events_db_path}")
+    print(f"DB exists: {os.path.exists(local_sis_events_db_path)}")
     
     try:
-        conn = sqlite3.connect(local_db_path)
+        conn = sqlite3.connect(local_sis_events_db_path)
         cursor = conn.cursor()
         
         # Check if TM_Events table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='TM_Events'")
-        table_exists = cursor.fetchone()
-        print(f"TM_Events table exists: {table_exists is not None}")
-        
-        if not table_exists:
+        if not cursor.fetchone():
             conn.close()
             return {"error": "TM_Events table not found", "events": []}
-        
-        # Query TM_Events table for event details
-        cursor.execute("SELECT ID, Name, Date, TotalImages FROM TM_Events ORDER BY ID")
+
+        # Determine available columns so we return Organizer/Venue if present
+        cursor.execute("PRAGMA table_info('TM_Events')")
+        cols = [r[1] for r in cursor.fetchall()]
+        select_cols = [c for c in ["ID","Name","Date","Organizer","Venue","TotalImages"] if c in cols]
+
+        cursor.execute(f"SELECT {', '.join(select_cols)} FROM TM_Events ORDER BY ID")
         rows = cursor.fetchall()
-        print(f"Found {len(rows)} events: {rows}")
-        
-        events = [{
-            "ID": row[0],
-            "Name": row[1],
-            "Date": row[2],
-            "TotalImages": row[3]
-        } for row in rows]
+
+        events = []
+        for row in rows:
+            ev = {}
+            for i, col in enumerate(select_cols):
+                ev[col] = row[i]
+            events.append(ev)
+
         conn.close()
-        
         print(f"Returning events: {events}")
         return {"events": events}
     except Exception as e:
@@ -365,39 +368,65 @@ async def get_events():
         traceback.print_exc()
         return {"error": str(e), "events": []}
 
+
+@service.get("/event-thumbnail/{event_id}")
+def get_event_thumbnail(event_id: int):
+    """Serve EventThumbnail.jpg (or first thumbnail) from Events/<ID>/Thumbnails"""
+    thumbnail_path = os.path.join(workspace_root, "Events", str(event_id), "Thumbnails", "EventThumbnail.jpg")
+    if os.path.exists(thumbnail_path):
+        return FileResponse(thumbnail_path)
+
+    # If specific file not present, try any image in the Thumbnails folder
+    thumbnails_folder = os.path.join(workspace_root, "Events", str(event_id), "Thumbnails")
+    if os.path.exists(thumbnails_folder):
+        files = [f for f in os.listdir(thumbnails_folder) if os.path.isfile(os.path.join(thumbnails_folder, f))]
+        if files:
+            return FileResponse(os.path.join(thumbnails_folder, files[0]))
+
+    # Fallback to a placeholder image in Images/support if available
+    placeholder = os.path.join(workspace_root, "Images", "support", "SIS_Logo_Black_Text.png")
+    if os.path.exists(placeholder):
+        return FileResponse(placeholder)
+
+    return {"error": "Thumbnail not found", "path": thumbnail_path}
+
 @service.post("/event-images")
 async def get_event_images(request: EventImagesRequest):
     """Get paginated images for a specific event"""
     try:
         conn = sqlite3.connect(local_db_path)
         cursor = conn.cursor()
-        
-        # Get total count
-        cursor.execute("SELECT COUNT(*) FROM TM_Images WHERE EventID = ?", (request.event_id,))
+
+        # Get total for this event
+        cursor.execute("SELECT COUNT(*) FROM TM_Images")
         total = cursor.fetchone()[0]
-        
-        # Get paginated results
+
+        # Get paginated results for this event
         cursor.execute("""
             SELECT FileName, FilePath, BibTags
             FROM TM_Images
-            WHERE EventID = ?
             ORDER BY FileName
             LIMIT ? OFFSET ?
-        """, (request.event_id, request.limit, request.offset))
-        
+        """, (request.limit, request.offset))
+
         matches = cursor.fetchall()
         conn.close()
-        
+
         results = []
         for match in matches:
             filename, filepath, bibtags = match
+            # Try to extract thumbnail filename and event id from FilePath
+            thumb_name = os.path.basename(filepath) if filepath else filename
+            # Construct a URL that maps to Event-specific image endpoint
+            thumbnail_url = f"/event-image/{request.event_id}/{thumb_name}"
+
             results.append({
                 "FileName": filename,
                 "FilePath": filepath,
                 "BibTags": bibtags,
-                "ThumbnailUrl": f"/images/{filename}"
+                "ThumbnailUrl": thumbnail_url
             })
-        
+
         return {
             "matches": results,
             "total": total,
@@ -408,6 +437,31 @@ async def get_event_images(request: EventImagesRequest):
         }
     except Exception as e:
         return {"error": str(e), "matches": [], "total": 0}
+
+@service.get("/event-image/{event_id}/{filename}")
+def get_event_image(event_id: int, filename: str):
+    """Serve an image thumbnail for a specific event from Events/<id>/Thumbnails or Events/<id>/Images"""
+    # sanitize filename
+    safe_name = os.path.basename(filename)
+
+    thumbs_folder = os.path.join(workspace_root, "Events", str(event_id), "Thumbnails")
+    images_folder = os.path.join(workspace_root, "Events", str(event_id), "Images")
+
+    candidate = os.path.join(thumbs_folder, safe_name)
+    if os.path.exists(candidate):
+        return FileResponse(candidate)
+
+    candidate = os.path.join(images_folder, safe_name)
+    if os.path.exists(candidate):
+        return FileResponse(candidate)
+
+    # Fallback to placeholder
+    placeholder = os.path.join(workspace_root, "Images", "support", "SIS_Logo_Black_Text.png")
+    if os.path.exists(placeholder):
+        return FileResponse(placeholder)
+
+    return {"error": "Image not found", "path": candidate}
+
 
 if __name__ == "__main__":
     import uvicorn

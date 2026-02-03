@@ -280,6 +280,75 @@
             color: white;
         }
 
+        /* Event tiles */
+        .event-tiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .event-tile {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .event-tile:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+
+        .event-tile.selected {
+            border: 2px solid #667eea;
+            box-shadow: 0 12px 40px rgba(102,126,234,0.18);
+        }
+
+        .event-tile .tile-image {
+            width: 100%;
+            height: 150px;
+            background: #ddd;
+        }
+
+        .event-tile .tile-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .event-tile .tile-info {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .event-tile h3 {
+            font-size: 1rem;
+            margin: 0;
+            color: #333;
+        }
+
+        .event-tile p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .event-tile .meta {
+            font-weight: 600;
+            color: #FF9800;
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -599,8 +668,8 @@
 <body>
     <script>
         // const API_BASE = 'http://localhost:8000';
-        // const API_BASE = 'http://127.0.0.1:8000'
-        const API_BASE = 'https://fmf-face-search-api.onrender.com';
+         const API_BASE = 'http://127.0.0.1:8000'
+        //const API_BASE = 'https://fmf-face-search-api.onrender.com';
     </script>
     <!-- Burger Menu -->
     <div class="burger-menu">
@@ -617,8 +686,8 @@
     </div>
     <div class="container">
         <div class="header">
-            <img src="https://fmf-face-search-api.onrender.com/logo" alt="ShootinStudio Logo" class="header-logo">
-             <!-- <img src="http://127.0.0.1:8000/logo" alt="ShootinStudio Logo" class="header-logo"> --> -->
+            <!-- <img src="https://fmf-face-search-api.onrender.com/logo" alt="ShootinStudio Logo" class="header-logo"> -->
+             <img src="http://127.0.0.1:8000/logo" alt="ShootinStudio Logo" class="header-logo">
             <div class="header-content">
                 <h1>🔍 Find My Photos</h1>
                 <!-- <p>Search by face or BIB number</p> -->
@@ -626,10 +695,10 @@
         </div>
         <div class="search-panel">
             <div class="form-group" style="margin-bottom: 25px;">
-                <label for="event-select">Select Event to Browse All Photos</label>
-                <select id="event-select" class="event-select">
-                    <option value="">-- Select an Event --</option>
-                </select>
+                <label>Select Event to Browse All Photos</label>
+                <div id="event-tiles" class="event-tiles">
+                    <!-- Event tiles will be injected here -->
+                </div>
             </div>
 
             <div class="tabs">
@@ -716,18 +785,43 @@
         let isLoadingMore = false;
         let hasMoreImages = false;
 
-        // Load active events on page load
+        // Load active events on page load and render as clickable tiles
         async function loadEvents() {
             try {
                 const response = await fetch(`${API_BASE}/events`);
                 const data = await response.json();
-                
-                const eventSelect = document.getElementById('event-select');
+
+                const tilesContainer = document.getElementById('event-tiles');
+                tilesContainer.innerHTML = '';
+
+                if (!data || !Array.isArray(data.events)) return;
+
                 data.events.forEach(event => {
-                    const option = document.createElement('option');
-                    option.value = event.ID;
-                    option.textContent = `${event.Name} - ${event.Date} (${event.TotalImages} photos)`;
-                    eventSelect.appendChild(option);
+                    const tile = document.createElement('div');
+                    tile.className = 'event-tile';
+                    const venue = event.Venue || '';
+                    const organizer = event.Organizer || '';
+                    tile.innerHTML = `
+                        <div class="tile-image">
+                            <img src="${API_BASE}/event-thumbnail/${event.ID}" alt="${event.Name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EThumbnail not available%3C/text%3E%3C/svg%3E'">
+                        </div>
+                        <div class="tile-info">
+                            <h3>${event.Name}</h3>
+                            <p>${event.Date} ${venue ? '• ' + venue : ''}</p>
+                            <p>Organizer: ${organizer}</p>
+                            <p class="meta">${event.TotalImages || 0} photos</p>
+                        </div>
+                    `;
+
+                    tile.addEventListener('click', () => {
+                        // Highlight selected tile
+                        document.querySelectorAll('.event-tile.selected').forEach(t => t.classList.remove('selected'));
+                        tile.classList.add('selected');
+
+                        selectEvent(event.ID);
+                    });
+
+                    tilesContainer.appendChild(tile);
                 });
             } catch (error) {
                 console.error('Failed to load events:', error);
@@ -737,11 +831,8 @@
         // Load events when page loads
         document.addEventListener('DOMContentLoaded', loadEvents);
 
-        // Event selection handler
-        document.getElementById('event-select').addEventListener('change', async (e) => {
-            const eventId = parseInt(e.target.value);
-            
-            // If no event selected, clear results
+        // Select an event (used by event tiles)
+        async function selectEvent(eventId) {
             if (!eventId) {
                 currentEventId = null;
                 currentOffset = 0;
@@ -749,26 +840,23 @@
                 hideResults();
                 return;
             }
-            
-            // Store the selected event and load images
-            currentEventId = eventId;
+
+            currentEventId = parseInt(eventId);
             currentOffset = 0;
             showLoading();
             hideError();
-            
+
             try {
                 const response = await fetch(`${API_BASE}/event-images`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        event_id: eventId,
+                        event_id: currentEventId,
                         offset: 0,
                         limit: 10
                     })
                 });
-                
+
                 const data = await response.json();
                 displayResults(data.matches, 'event');
                 hasMoreImages = data.hasMore;
@@ -778,7 +866,7 @@
             } finally {
                 hideLoading();
             }
-        });
+        }
 
         // Infinite scroll handler
         window.addEventListener('scroll', async () => {
@@ -829,7 +917,8 @@
                 currentEventId = null;
                 currentOffset = 0;
                 hasMoreImages = false;
-                document.getElementById('event-select').value = '';
+                // Clear any selected event tile
+                document.querySelectorAll('.event-tile.selected').forEach(t => t.classList.remove('selected'));
                 
                 hideError();
                 hideResults();
