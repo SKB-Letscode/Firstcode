@@ -25,36 +25,141 @@
         }
 
         .header {
-            color: white;
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
+            color: #000;
+            margin-bottom: 8px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
-            gap: 5px;
-            text-align: center;
+            gap: 18px;
+            padding: 8px 0 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
         }
 
         .header-content {
             display: flex;
-            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-left {
+            display: flex;
             align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            font-size: 28px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-text {
+            display:flex;
+            flex-direction:column;
+            align-items:flex-start;
         }
 
         .header-logo {
-            width: 280px;
+            width: 180px;
             height: auto;
+            border-radius: 0;
+            overflow: visible;
+            object-fit: contain;
+            flex-shrink: 0;
+            box-shadow: none;
+            border: none;
+            background: transparent;
+        }
+        @media (max-width: 900px) { .header-logo { width: 140px; height: auto; border-radius: 0; } }
+
+        .header-subtext {
+            display: none; /* shown on desktop only */
+            max-width: 520px;
+            text-align: center;
+            padding: 2px 12px;
+        }
+
+        .header-subtext .line1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 6px;
+        }
+
+        .header-subtext .line2 {
+            font-size: 0.95rem;
+            font-weight: 400;
+            color: #777;
+            margin-top: 6px;
         }
 
         .header h1 {
             font-family: 'Montserrat', sans-serif;
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-            color: #000000;
-            font-weight: 700;
+            font-size: 1.6rem;
+            margin: 0;
+            color: #111;
+            font-weight: 800;
+            letter-spacing: 0.2px;
         }
 
+        .header-subtitle {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            align-self: end; /* place at the bottom of the header */
+            margin-top: 0;
+        }
+        .tag-icon { font-size: 1.15rem; line-height: 1; }
+        .tagline-row { display:flex; align-items: baseline; gap: 8px; }
+        .tag-line-main { font-weight: 700; color: #222; font-size: 1.03rem; }
+        .tag-sep { color: #999; margin: 0 4px; }
+        .tag-line-sub { font-weight: 500; color: #666; font-size: 0.95rem; }
+        @media (max-width: 900px) {
+            .header-subtitle { align-self: center; gap: 6px; }
+            .tag-line-main, .tag-line-sub { font-size: 0.95rem; }
+        }
+
+        /* Tag icon and tagline */
+        .tag-icon { font-size: 1.15rem; line-height: 1; }
+        .tag-line-main { font-weight:700; color:#222; margin-left:6px; }
+        @media (max-width: 900px) { .tag-line-main { font-size: 0.95rem; } }
+
         .header p {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            margin-top: 2px;
+            color: #444;
+        }
+
+        /* Show subtext on larger screens and increase header scales */
+        @media (min-width: 900px) {
+            .header-subtext { display: block; }
+            .header h1 { font-size: 2.1rem; }
+            .header-subtitle { font-size: 1.05rem; font-weight:700; color:#222; }
+        }
+
+        /* Responsive: stack on narrow screens */
+        @media (max-width: 600px) {
+            .header {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+            .header-content {
+                align-items: center;
+            }
+            .header-logo {
+                width: 160px;
+                height: auto;
+                border-radius: 12px;
+            }
+            .header h1 {
+                font-size: 1.4rem;
+            }
+            .header-subtext { display: none; }
+            .tag-line-main { font-size: 1rem; }
+            .tag-line-sub { font-size: 0.95rem; }
         }
 
         /* Burger Menu Styles */
@@ -283,8 +388,8 @@
         /* Event tiles */
         .event-tiles {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 14px;
             margin-top: 8px;
         }
 
@@ -292,17 +397,16 @@
             background: white;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            flex-direction: column;
+            position: relative;
             border: 1px solid rgba(0,0,0,0.04);
         }
 
         .event-tile:hover {
             transform: translateY(-6px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
         }
 
         .event-tile.selected {
@@ -312,8 +416,9 @@
 
         .event-tile .tile-image {
             width: 100%;
-            height: 150px;
+            height: 200px;
             background: #ddd;
+            position: relative;
         }
 
         .event-tile .tile-image img {
@@ -323,30 +428,42 @@
             display: block;
         }
 
-        .event-tile .tile-info {
+        /* Overlay content on the image to reduce vertical space */
+        .event-tile .tile-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
             padding: 12px;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 100%);
+            color: #fff;
             display: flex;
-            flex-direction: column;
-            gap: 6px;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 10px;
         }
 
-        .event-tile h3 {
-            font-size: 1rem;
+        .event-tile .overlay-left h3 {
+            font-size: 1.05rem;
             margin: 0;
-            color: #333;
+            color: #fff;
+            font-weight: 700;
         }
 
-        .event-tile p {
+        .event-tile .overlay-left p {
             margin: 0;
-            font-size: 0.85rem;
-            color: #666;
+            font-size: 0.92rem;
+            color: rgba(255,255,255,0.9);
         }
 
-        .event-tile .meta {
+        .event-tile .tile-badge {
+            background: rgba(0,0,0,0.35);
+            padding: 6px 10px;
+            border-radius: 18px;
             font-weight: 600;
-            color: #FF9800;
-            margin-top: 6px;
+            color: #fff;
             font-size: 0.9rem;
+            white-space: nowrap;
         }
 
         .btn {
@@ -578,6 +695,8 @@
             .image-wrapper {
                 height: 200px;
             }
+
+            .event-tiles { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
         }
 
         @media (max-width: 480px) {
@@ -645,6 +764,9 @@
                 padding: 0;
             }
 
+            .event-tiles { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+            .event-tile .tile-image { height: 140px; }
+
             .image-info {
                 padding: 6px 8px;
             }
@@ -687,11 +809,22 @@
     <div class="container">
         <div class="header">
             <!-- <img src="https://fmf-face-search-api.onrender.com/logo" alt="ShootinStudio Logo" class="header-logo"> -->
-             <img src="http://127.0.0.1:8000/logo" alt="ShootinStudio Logo" class="header-logo">
             <div class="header-content">
-                <h1>🔍 Find My Photos</h1>
-                <!-- <p>Search by face or BIB number</p> -->
+                <div class="header-left">
+                    <div class="header-icon">🔍</div>
+                    <div class="header-text">
+                        <h1>Find My Photos</h1>
+                        <div class="header-subtitle">
+                            <div class="tagline-row"><span class="tag-line-main">AI Photo Search</span><span class="tag-sep">—</span><span class="tag-line-sub">Spot it. Find it. Love it.</span></div>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <div class="header-subtext">
+                <div class="line1">Professional Photo Services customised to your budget.</div>
+                <div class="line2">We don't take photos, we make it and you'll love it....!</div>
+            </div>
+             <img src="http://127.0.0.1:8000/logo" alt="ShootinStudio Logo" class="header-logo">
         </div>
         <div class="search-panel">
             <div class="form-group" style="margin-bottom: 25px;">
@@ -805,12 +938,13 @@
                         <div class="tile-image">
                             <img src="${API_BASE}/event-thumbnail/${event.ID}" alt="${event.Name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EThumbnail not available%3C/text%3E%3C/svg%3E'">
                         </div>
-                        <div class="tile-info">
-                            <h3>${event.Name}</h3>
-                            <p>${event.Date} ${venue ? '• ' + venue : ''}</p>
-                            <p>Organizer: ${organizer}</p>
-                            <p class="meta">${event.TotalImages || 0} photos</p>
-                        </div>
+                            <div class="tile-overlay">
+                                <div class="overlay-left">
+                                    <h3>${event.Name}</h3>
+                                    <p>${event.Date}${venue ? ' • ' + venue : ''}${organizer ? ' • ' + organizer : ''}</p>
+                                </div>
+                                <div class="tile-badge">${event.TotalImages || 0} photos</div>
+                            </div>
                     `;
 
                     tile.addEventListener('click', () => {
@@ -830,6 +964,8 @@
 
         // Load events when page loads
         document.addEventListener('DOMContentLoaded', loadEvents);
+
+        // Tagline control removed (static full text used)
 
         // Select an event (used by event tiles)
         async function selectEvent(eventId) {
