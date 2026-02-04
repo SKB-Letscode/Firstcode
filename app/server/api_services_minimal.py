@@ -1,5 +1,5 @@
 #====================================================================================
-# Author: Sara / Vo Pilot 
+# Author: Sara / Co Pilot 
 # Created on: 21 Nov 2025
 # Brief: Alternative: Deploy without Face Search (BIB Search Only)
 #        This removes face_recognition dependency to avoid memory issues
@@ -19,19 +19,22 @@ import sqlite3
 import pickle
 import numpy as np
 import faiss
+import hashlib
 
 # Data configuration may get changed later
 EventID = 1
 
 # Download files from S3 on startup (for Render deployment)
-print("Checking for S3 files...")
-if not os.path.exists(os.getenv('DB_FOLDER', '/opt/render/project/src/DB') + '/1_ImageDB.sqlite'):
-    print("DB files not found locally, downloading from S3...")
-    from app.s3_downloader import download_from_s3
-    download_from_s3()
-else:
-    print("DB files found locally, skipping S3 download")
+# # Comented starts
+# print("Checking for S3 files...")
+# if not os.path.exists(os.getenv('DB_FOLDER', '/opt/render/project/src/DB') + '/1_ImageDB.sqlite'):
+#     print("DB files not found locally, downloading from S3...")
+#     from app.s3_downloader import download_from_s3
+#     download_from_s3()
+# else:
+#     print("DB files found locally, skipping S3 download")
 
+# # Comented Ends
 # Request model for BIB search
 class BibSearchRequest(BaseModel):
     bib_number: str
@@ -44,6 +47,7 @@ class EventImagesRequest(BaseModel):
 
 # Base image location for thumbnails
 workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+IMAGES_BASE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events")
 THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
 
@@ -88,6 +92,28 @@ except Exception as e:
 # Configuration for face search
 MAX_DIM = 800  # Resize images to reduce memory usage
 DISTANCE_THRESHOLD = 0.19  # Only return matches with distance <= this value
+
+# Utility: compare files by MD5 to detect placeholder/logo duplicates
+def file_md5(path, block_size=65536):
+    """Return MD5 hash of a file (used to detect placeholder/logo files)."""
+    h = hashlib.md5()
+    try:
+        with open(path, 'rb') as fh:
+            for chunk in iter(lambda: fh.read(block_size), b''):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:
+        return None
+
+
+def is_same_as_placeholder(path):
+    """Return True if the given file is byte-identical to the app placeholder/logo."""
+    placeholder = os.path.join(workspace_root, "Images", "support", "SIS_Logo_Black_Text.png")
+    if not (path and os.path.exists(path) and os.path.exists(placeholder)):
+        return False
+    md1 = file_md5(path)
+    md2 = file_md5(placeholder)
+    return (md1 is not None and md2 is not None and md1 == md2)
 
 service = FastAPI(title="Face Search API - Full Featured")
 
@@ -374,38 +400,37 @@ async def get_events():
         traceback.print_exc()
         return {"error": str(e), "events": []}
 
-
+# This method is cleaned and simplified to work : Sara
 @service.get("/event-thumbnail/{event_id}")
 def get_event_thumbnail(event_id: int):
-    """Serve EventThumbnail.jpg (or first thumbnail) from Events/<ID>/Thumbnails"""
-    thumbnail_path = os.path.join(workspace_root, "Events", str(event_id), "Thumbnails", "EventThumbnail.jpg")
-    if os.path.exists(thumbnail_path):
-        return FileResponse(thumbnail_path)
-
-    # If specific file not present, try any image in the Thumbnails folder
-    thumbnails_folder = os.path.join(workspace_root, "Events", str(event_id), "Thumbnails")
-    if os.path.exists(thumbnails_folder):
-        files = [f for f in os.listdir(thumbnails_folder) if os.path.isfile(os.path.join(thumbnails_folder, f))]
-        if files:
-            return FileResponse(os.path.join(thumbnails_folder, files[0]))
-
-    # Fallback to a placeholder image in Images/support if available
-    placeholder = os.path.join(workspace_root, "Images", "support", "SIS_Logo_Black_Text.png")
-    if os.path.exists(placeholder):
-        return FileResponse(placeholder)
-
-    return {"error": "Thumbnail not found", "path": thumbnail_path}
+    try:
+        # sanitize event_id
+        event_id = int(event_id)
+        thumbnail_image = os.path.join("C:\\Work\\Data\\Events\\", str(event_id), "Thumbnails","EventThumbnail.JPG")
+        print (f"SKB - Looking for thumbnail in folder: {thumbnail_image}")
+        return FileResponse(thumbnail_image)
+    except Exception as e:
+        print(f"Error serving thumbnail for event {event_id}: {e}")
+        return {"error": f"Thumbnail not available for event {event_id}"}
 
 @service.post("/event-images")
 async def get_event_images(request: EventImagesRequest):
     """Get paginated images for a specific event"""
     try:
+
+        local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events\\" + str(request.event_id) + r"\DB")  # Local folder to store DB
+        DB_FILE = str(request.event_id) +"_ImageDB.sqlite"
+        local_db_path = os.path.join(local_db_folder, DB_FILE)
+
+        print(f"SKB - local_db_file is {local_db_path}")
+
         conn = sqlite3.connect(local_db_path)
         cursor = conn.cursor()
 
-        # Get total for this event
+        # Get total images for this event
         cursor.execute("SELECT COUNT(*) FROM TM_Images")
         total = cursor.fetchone()[0]
+        print(f"/event-images: event_id={request.event_id} matched={total}")
 
         # Get paginated results for this event
         cursor.execute("""
@@ -414,17 +439,47 @@ async def get_event_images(request: EventImagesRequest):
             ORDER BY FileName
             LIMIT ? OFFSET ?
         """, (request.limit, request.offset))
-
         matches = cursor.fetchall()
         conn.close()
 
         results = []
+
+        print(f"SKB Workspace root is " + workspace_root)
+
         for match in matches:
             filename, filepath, bibtags = match
-            # Try to extract thumbnail filename and event id from FilePath
+            # Use the basename of FilePath if possible (this should map to files inside Events/<id>/Thumbnails or Images)
             thumb_name = os.path.basename(filepath) if filepath else filename
-            # Construct a URL that maps to Event-specific image endpoint
-            thumbnail_url = f"/event-image/{request.event_id}/{thumb_name}"
+
+            # Prefer event-specific thumbnails/images if they exist; otherwise prefer global thumbnails
+            event_thumb = os.path.join(workspace_root, "Events", str(request.event_id), "Thumbnails", thumb_name)
+            event_image = os.path.join(workspace_root, "Events", str(request.event_id), "Images", thumb_name)
+
+            chosen_source = None
+            # Prefer event-specific thumbnail/image if present and not identical to placeholder
+            if os.path.exists(event_thumb) and not is_same_as_placeholder(event_thumb):
+                thumbnail_url = f"/event-image/{request.event_id}/{thumb_name}"
+                chosen_source = 'event:thumb'
+            elif os.path.exists(event_image) and not is_same_as_placeholder(event_image):
+                thumbnail_url = f"/event-image/{request.event_id}/{thumb_name}"
+                chosen_source = 'event:image'
+            else:
+                # Check global thumbnails folders
+                global_thumb_path_1 = os.path.join(THUMBNAILS_FOLDER, thumb_name) if THUMBNAILS_FOLDER else None
+                global_thumb_path_2 = os.path.join(LOCAL_THUMBNAIL_FOLDER, thumb_name) if LOCAL_THUMBNAIL_FOLDER else None
+
+                if global_thumb_path_1 and os.path.exists(global_thumb_path_1) and not is_same_as_placeholder(global_thumb_path_1):
+                    thumbnail_url = f"/images/{thumb_name}"
+                    chosen_source = 'global:THUMBNAILS_FOLDER'
+                elif global_thumb_path_2 and os.path.exists(global_thumb_path_2) and not is_same_as_placeholder(global_thumb_path_2):
+                    thumbnail_url = f"/images/{thumb_name}"
+                    chosen_source = 'global:LOCAL_THUMBNAIL_FOLDER'
+                else:
+                    # Fallback to event-image endpoint which itself will return a placeholder if the file is missing
+                    thumbnail_url = f"/event-image/{request.event_id}/{thumb_name}"
+                    chosen_source = 'placeholder'
+
+            print(f"/event-images: file={thumb_name} source={chosen_source}")
 
             results.append({
                 "FileName": filename,
@@ -439,9 +494,10 @@ async def get_event_images(request: EventImagesRequest):
             "offset": request.offset,
             "limit": request.limit,
             "count": len(results),
-            "hasMore": (request.offset + request.limit) < total
+            "hasMore": (request.offset + len(results)) < total
         }
     except Exception as e:
+        print(f"Error in /event-images: {e}")
         return {"error": str(e), "matches": [], "total": 0}
 
 @service.get("/event-image/{event_id}/{filename}")

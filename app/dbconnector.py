@@ -21,7 +21,6 @@ db_subfolder = r"FMF/SQLiteDB"  # S3 subfolder where DB is stored
 s3_imagefolder_prefix = r"FMF/FMFImages/"  # S3 image folder folder path
 
 
-
 # Local file names
 # local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\DB")  # Local folder to store DB
 local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\DB")  # Local folder to store DB
@@ -45,22 +44,5 @@ LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(Ev
 def init_db():
     conn = sqlite3.connect(local_db_path)
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS TM_Images (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            EventID INTEGER,
-            FileName TEXT,
-            FilePath TEXT,
-            BibTags TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS TM_Faces (
-            FaceID INTEGER PRIMARY KEY AUTOINCREMENT,
-            ImageID INTEGER,
-            Embedding BLOB,
-            FOREIGN KEY(ImageID) REFERENCES TM_Images(ID)
-        )
-    """)
     conn.commit()
     conn.close()
