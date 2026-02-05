@@ -410,8 +410,43 @@
         }
 
         .event-tile.selected {
-            border: 2px solid #667eea;
-            box-shadow: 0 12px 40px rgba(102,126,234,0.18);
+            border: 3px solid #4f6fee;
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(79,111,238,0.22), 0 0 0 6px rgba(79,111,238,0.06);
+            z-index: 5;
+        }
+
+        /* Small floating 'Selected' badge */
+        .event-tile.selected::after {
+            content: 'Selected';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: linear-gradient(90deg, #ffd166 0%, #ff7b7b 50%, #6a8df6 100%);
+            color: #02203b;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 0.78rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            box-shadow: 0 8px 30px rgba(79,111,238,0.16), 0 2px 6px rgba(0,0,0,0.12);
+            transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+            transform-origin: left center;
+            animation: badgePulse 3s ease-in-out infinite;
+            z-index: 6;
+        }
+
+        @keyframes badgePulse {
+            0% { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 8px 30px rgba(79,111,238,0.12); }
+            50% { transform: translateY(-2px) scale(1.02); opacity: 0.98; box-shadow: 0 14px 40px rgba(79,111,238,0.2); }
+            100% { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 8px 30px rgba(79,111,238,0.12); }
+        }
+
+        .event-tile.selected .tile-badge {
+            background: linear-gradient(135deg, #667eea 0%, #5a54e6 100%);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(79,111,238,0.14);
         }
 
         .event-tile .tile-image {
@@ -828,7 +863,7 @@
         </div>
         <div class="search-panel">
             <div class="form-group" style="margin-bottom: 25px;">
-                <label>Select Event to Browse All Photos</label>
+                <label style="display:block; margin-bottom:14px;">Select Event to Browse All Photos</label>
                 <div id="event-tiles" class="event-tiles">
                     <!-- Event tiles will be injected here -->
                 </div>
@@ -929,9 +964,11 @@
 
                 if (!data || !Array.isArray(data.events)) return;
 
+                let firstEventID = null;
                 data.events.forEach(event => {
                     const tile = document.createElement('div');
                     tile.className = 'event-tile';
+                    if (firstEventID === null) firstEventID = event.ID;
                     const venue = event.Venue || '';
                     const organizer = event.Organizer || '';
                     tile.innerHTML = `
@@ -952,11 +989,29 @@
                         document.querySelectorAll('.event-tile.selected').forEach(t => t.classList.remove('selected'));
                         tile.classList.add('selected');
 
+                        // Clear BIB input and any uploaded selfie so searches are scoped to this event
+                        const bibInput = document.getElementById('bib-number');
+                        if (bibInput) bibInput.value = '';
+                        const faceInput = document.getElementById('face-file');
+                        if (faceInput) faceInput.value = '';
+                        const fileNameEl = document.getElementById('file-name');
+                        if (fileNameEl) fileNameEl.textContent = '';
+
+                        // Clear previous results and errors
+                        hideResults();
+                        hideError();
+
                         selectEvent(event.ID);
                     });
 
                     tilesContainer.appendChild(tile);
                 });
+                // After rendering, ensure one event is active by default (only on first load)
+                if (!currentEventId && firstEventID) {
+                    const firstTile = tilesContainer.firstElementChild;
+                    if (firstTile) firstTile.classList.add('selected');
+                    selectEvent(firstEventID);
+                }
             } catch (error) {
                 console.error('Failed to load events:', error);
             }
@@ -1049,12 +1104,9 @@
                 tab.classList.add('active');
                 document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
                 
-                // Reset event selection when switching tabs
-                currentEventId = null;
+                // Preserve selected event when switching tabs; only reset pagination
                 currentOffset = 0;
                 hasMoreImages = false;
-                // Clear any selected event tile
-                document.querySelectorAll('.event-tile.selected').forEach(t => t.classList.remove('selected'));
                 
                 hideError();
                 hideResults();
@@ -1148,7 +1200,7 @@
             }
 
             // Reset event-based pagination when doing BIB search
-            currentEventId = null;
+            // currentEventId = null;
             currentOffset = 0;
             hasMoreImages = false;
 
@@ -1156,12 +1208,16 @@
             hideError();
 
             try {
+                const payload = { bib_number: bibNumber };
+                // Ensure a valid integer event_id is sent; default to 1 when none selected
+                payload.event_id = Number.isInteger(currentEventId) ? currentEventId : 1;
+
                 const response = await fetch(`${API_BASE}/search-bib`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ bib_number: bibNumber })
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) throw new Error('Search failed');

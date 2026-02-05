@@ -20,15 +20,14 @@ bucket_name = os.getenv('S3_BUCKET_NAME', "sara-s3-bucket")
 db_subfolder = r"FMF/SQLiteDB"  # S3 subfolder where DB is stored
 s3_imagefolder_prefix = r"FMF/FMFImages/"  # S3 image folder folder path
 
-
 # Local file names
-# local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\DB")  # Local folder to store DB
+local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\DB")  # Local folder to store DB
 local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\DB")  # Local folder to store DB
 local_events_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events")  # Local folder to store only events details
-DB_FILE = str(EventID) +"_ImageDB.sqlite"
+DB_FILE = "ImageDB.sqlite"
 SIS_EVENTS_DB_FILE = "SIS_Events_DB.sqlite"
-INDEX_FILE = str(EventID) +"_faiss_face_index.bin"
-META_FILE = str(EventID) +"_face_metadata.pkl"
+INDEX_FILE = "faiss_face_index.bin"
+META_FILE = "face_metadata.pkl"
 
 # Full local paths
 local_db_path = os.path.join(local_db_folder, DB_FILE)

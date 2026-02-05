@@ -22,7 +22,7 @@ import faiss
 import hashlib
 
 # Data configuration may get changed later
-EventID = 1
+# EventID = 1
 
 # Download files from S3 on startup (for Render deployment)
 # # Comented starts
@@ -38,6 +38,7 @@ EventID = 1
 # Request model for BIB search
 class BibSearchRequest(BaseModel):
     bib_number: str
+    event_id: int = 1
 
 # Request model for Event images with pagination
 class EventImagesRequest(BaseModel):
@@ -50,14 +51,37 @@ workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "
 IMAGES_BASE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events")
 THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
+# Local sub folders - do not assume a single EventID at module import time.
+# Keep a global thumbnails folder (used by /images/*). For event-specific
+# folders use the helper functions below which compute paths using the
+# configured IMAGES_BASE_FOLDER or the environment `IMAGE_FOLDER`.
+THUMBNAILS_FOLDER = os.getenv('IMAGE_FOLDER', os.path.join(workspace_root, "Images"))
+LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', os.path.join(workspace_root, "Images"))
 
-# Local sub folders 
-THUMBNAILS_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Thumbnails")
-LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Images")
+
+def event_thumbnails_path(event_id: int):
+    """Return the thumbnails folder path for a given event_id."""
+    base = os.getenv('IMAGE_FOLDER', IMAGES_BASE_FOLDER)
+    return os.path.join(base, str(event_id), "Thumbnails")
+
+
+def event_images_path(event_id: int):
+    """Return the images folder path for a given event_id."""
+    base = os.getenv('IMAGE_FOLDER', IMAGES_BASE_FOLDER)
+    return os.path.join(base, str(event_id), "Images")
 
 
 # DB paths
-from app.dbconnector import local_db_path, local_index_path, local_meta_path,local_sis_events_db_path,LOCAL_THUMBNAIL_FOLDER
+from app.dbconnector import (
+    local_db_path,
+    local_index_path,
+    local_meta_path,
+    local_sis_events_db_path,
+    LOCAL_THUMBNAIL_FOLDER,
+    local_events_db_folder,
+    INDEX_FILE,
+    META_FILE,
+)
 
 # Print paths for debugging on Render
 print(f"\n=== Path Configuration ===")
@@ -74,20 +98,90 @@ if os.path.exists(THUMBNAILS_FOLDER):
     print(f"Images folder contents: {len(os.listdir(THUMBNAILS_FOLDER))} items")
 print(f"========================\n")
 
-# Load FAISS index and metadata
-try:
-    print("Loading FAISS index and metadata...")
-    index = faiss.read_index(local_index_path)
-    with open(local_meta_path, 'rb') as f:
-        face_ids = pickle.load(f)
-    print(f"Successfully loaded FAISS index with {index.ntotal} faces")
-    FACE_SEARCH_ENABLED = True
-except Exception as e:
-    print(f"Warning: Could not load FAISS index: {e}")
-    print("Face search will be disabled")
-    FACE_SEARCH_ENABLED = False
-    index = None
-    face_ids = None
+# Determine if default (module-level) index files exist
+FACE_SEARCH_ENABLED = os.path.exists(local_index_path) and os.path.exists(local_meta_path)
+
+# Per-event index cache: maps event_id -> { 'index': faiss_index, 'face_ids': list }
+event_index_cache = {}
+
+def _event_db_folder(event_id: int):
+    """Return the event-specific DB folder (e.g. <events_root>/<event_id>/DB)."""
+    return os.path.join(local_events_db_folder, str(event_id), "DB")
+
+def load_event_index(event_id: int):
+    """Load and cache FAISS index + metadata for a given event_id.
+
+    Returns (index, face_ids) or raises Exception on failure.
+    """
+    if event_id in event_index_cache:
+        return event_index_cache[event_id]['index'], event_index_cache[event_id]['face_ids']
+
+    folder = _event_db_folder(event_id)
+    idx_path = os.path.join(folder, INDEX_FILE)
+    meta_path = os.path.join(folder, META_FILE)
+
+    if not os.path.exists(idx_path) or not os.path.exists(meta_path):
+        raise FileNotFoundError(f"Index/meta not found for event {event_id}: {idx_path}, {meta_path}")
+
+    # Read index and metadata
+    idx = faiss.read_index(idx_path)
+    with open(meta_path, 'rb') as f:
+        fids = pickle.load(f)
+
+    event_index_cache[event_id] = { 'index': idx, 'face_ids': fids }
+    return idx, fids
+
+def preload_all_event_indices():
+    """Load indices for all events listed in the SIS events DB.
+
+    This reads `TM_Events.ID` from `local_sis_events_db_path` and attempts
+    to load an index for each event. Successfully-loaded event IDs are
+    stored in `event_index_cache` by `load_event_index`.
+    """
+    global FACE_SEARCH_ENABLED
+    loaded = []
+    try:
+        if not os.path.exists(local_sis_events_db_path):
+            print(f"SIS events DB not found at {local_sis_events_db_path}; skipping preload")
+            FACE_SEARCH_ENABLED = len(event_index_cache) > 0 or (os.path.exists(local_index_path) and os.path.exists(local_meta_path))
+            return loaded
+
+        conn = sqlite3.connect(local_sis_events_db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID FROM TM_Events")
+        rows = cursor.fetchall()
+        conn.close()
+
+        for r in rows:
+            try:
+                eid = int(r[0])
+            except Exception:
+                print(f"Skipping invalid event id: {r}")
+                continue
+
+            try:
+                load_event_index(eid)
+                loaded.append(eid)
+                print(f"Loaded FAISS index for event {eid}")
+            except Exception as e:
+                print(f"Could not load index for event {eid}: {e}")
+
+    except Exception as e:
+        print(f"Error while preloading event indices: {e}")
+
+    FACE_SEARCH_ENABLED = len(event_index_cache) > 0 or (os.path.exists(local_index_path) and os.path.exists(local_meta_path))
+    print(f"Preload complete. Loaded indices for events: {loaded}")
+    return loaded
+
+
+# Create FastAPI service early so decorators can reference it
+service = FastAPI(title="Face Search API - Full Featured")
+
+
+@service.on_event("startup")
+def _startup_preload_indices():
+    print("Startup: preloading FAISS indices for all events...")
+    preload_all_event_indices()
 
 # Configuration for face search
 MAX_DIM = 800  # Resize images to reduce memory usage
@@ -115,7 +209,6 @@ def is_same_as_placeholder(path):
     md2 = file_md5(placeholder)
     return (md1 is not None and md2 is not None and md1 == md2)
 
-service = FastAPI(title="Face Search API - Full Featured")
 
 # Enable CORS
 service.add_middleware(
@@ -149,6 +242,8 @@ def health_check():
         "status": "ok",
         "mode": "Full featured (Face + BIB search)" if FACE_SEARCH_ENABLED else "BIB search only",
         "face_search_enabled": FACE_SEARCH_ENABLED,
+        "loaded_event_indices": list(event_index_cache.keys()),
+        "loaded_count": len(event_index_cache),
         "db_path": local_db_path,
         "db_exists": os.path.exists(local_db_path),
         "images_folder": THUMBNAILS_FOLDER,
@@ -188,7 +283,7 @@ def get_download_icon():
     return {"error": "Download icon not found", "path": icon_path}
 
 @service.post("/search-face")
-async def search_face(file: UploadFile = File(...), top_k: int = 5):
+async def search_face(file: UploadFile = File(...), top_k: int = 5, event_id: int = 1):
     """
     Search for faces in uploaded image
     
@@ -199,10 +294,13 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
     Returns:
         JSON with list of matching images
     """
-    if not FACE_SEARCH_ENABLED:
+    # Load (or get cached) FAISS index + metadata for the requested event
+    try:
+        event_index, event_face_ids = load_event_index(event_id)
+    except Exception as e:
         return {
-            "error": "Face search is not available",
-            "message": "FAISS index not loaded. Please use BIB search instead.",
+            "error": "Face search is not available for this event",
+            "message": str(e),
             "matches": []
         }
     
@@ -283,14 +381,14 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
         # Search for each detected face
         for face_emb in uploaded_faces:
             face_emb = np.expand_dims(face_emb.astype('float32'), axis=0)
-            distances, indices = index.search(face_emb, top_k)
+            distances, indices = event_index.search(face_emb, top_k)
             
             for j, i in enumerate(indices[0]):
                 dist = float(distances[0][j])
                 
                 # Only include matches at or below the threshold
                 if dist <= DISTANCE_THRESHOLD:
-                    matched_face_id = face_ids[i]
+                    matched_face_id = event_face_ids[i]
                     conn = sqlite3.connect(local_db_path)
                     cursor = conn.cursor()
                     cursor.execute("""
@@ -333,6 +431,13 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5):
 async def search_bib(request: BibSearchRequest):
     """Search images by BIB number"""
     try:
+        # Ensure event_id is present (model has default=1)
+        event_id = int(request.event_id)
+        local_db_folder = os.getenv('DB_FOLDER', r"C:\\Work\\Data\\Events\\" + str(event_id) + r"\DB")  # Local folder to store DB
+        DB_FILE = "ImageDB.sqlite"
+        local_db_path = os.path.join(local_db_folder, DB_FILE)
+        if not os.path.exists(local_db_path):
+            return {"error": f"Image DB not found for event {event_id}", "matches": []}
         conn = sqlite3.connect(local_db_path)
         cursor = conn.cursor()
         
@@ -406,9 +511,16 @@ def get_event_thumbnail(event_id: int):
     try:
         # sanitize event_id
         event_id = int(event_id)
-        thumbnail_image = os.path.join("C:\\Work\\Data\\Events\\", str(event_id), "Thumbnails","EventThumbnail.JPG")
+        thumbnail_image = os.path.join(event_thumbnails_path(event_id), "EventThumbnail.JPG")
         print (f"SKB - Looking for thumbnail in folder: {thumbnail_image}")
-        return FileResponse(thumbnail_image)
+        if os.path.exists(thumbnail_image):
+            return FileResponse(thumbnail_image)
+
+        # fallback to placeholder if event thumbnail missing
+        placeholder = os.path.join(workspace_root, "Images", "support", "SIS_Logo_Black_Text.png")
+        if os.path.exists(placeholder):
+            return FileResponse(placeholder)
+        return {"error": f"Thumbnail not available for event {event_id}", "path": thumbnail_image}
     except Exception as e:
         print(f"Error serving thumbnail for event {event_id}: {e}")
         return {"error": f"Thumbnail not available for event {event_id}"}
@@ -419,7 +531,7 @@ async def get_event_images(request: EventImagesRequest):
     try:
 
         local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events\\" + str(request.event_id) + r"\DB")  # Local folder to store DB
-        DB_FILE = str(request.event_id) +"_ImageDB.sqlite"
+        DB_FILE = "ImageDB.sqlite"
         local_db_path = os.path.join(local_db_folder, DB_FILE)
 
         print(f"SKB - local_db_file is {local_db_path}")
@@ -452,8 +564,8 @@ async def get_event_images(request: EventImagesRequest):
             thumb_name = os.path.basename(filepath) if filepath else filename
 
             # Prefer event-specific thumbnails/images if they exist; otherwise prefer global thumbnails
-            event_thumb = os.path.join(workspace_root, "Events", str(request.event_id), "Thumbnails", thumb_name)
-            event_image = os.path.join(workspace_root, "Events", str(request.event_id), "Images", thumb_name)
+            event_thumb = os.path.join(event_thumbnails_path(request.event_id), thumb_name)
+            event_image = os.path.join(event_images_path(request.event_id), thumb_name)
 
             chosen_source = None
             # Prefer event-specific thumbnail/image if present and not identical to placeholder
@@ -506,8 +618,8 @@ def get_event_image(event_id: int, filename: str):
     # sanitize filename
     safe_name = os.path.basename(filename)
 
-    thumbs_folder = os.path.join(workspace_root, "Events", str(event_id), "Thumbnails")
-    images_folder = os.path.join(workspace_root, "Events", str(event_id), "Images")
+    thumbs_folder = event_thumbnails_path(event_id)
+    images_folder = event_images_path(event_id)
 
     candidate = os.path.join(thumbs_folder, safe_name)
     if os.path.exists(candidate):
