@@ -1,0 +1,32 @@
+[Unit]
+Description=FMF Face Recognition & BIB Search API
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/fmf-app
+Environment="PATH=/home/ubuntu/fmf-app/venv/bin"
+EnvironmentFile=/home/ubuntu/fmf-app/.env
+ExecStart=/home/ubuntu/fmf-app/venv/bin/uvicorn app.server.api_services_minimal:service --host 0.0.0.0 --port 8000
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fmf-app
+
+# Security settings (optional but recommended)
+# NoNewPrivileges=true
+# PrivateTmp=true
+
+# Resource limits (adjust based on your instance type)
+# MemoryLimit=800M
+# CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

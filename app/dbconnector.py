@@ -21,9 +21,8 @@ db_subfolder = r"FMF/SQLiteDB"  # S3 subfolder where DB is stored
 s3_imagefolder_prefix = r"FMF/FMFImages/"  # S3 image folder folder path
 
 # Local file names
-local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\DB")  # Local folder to store DB
-local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\DB")  # Local folder to store DB
-local_events_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events")  # Local folder to store only events details
+local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\Data\Events\\" + str(EventID) + r"\DB")  # Local folder to store DB
+local_events_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\Data\Events")  # Local folder to store only events details
 DB_FILE = "ImageDB.sqlite"
 SIS_EVENTS_DB_FILE = "SIS_Events_DB.sqlite"
 INDEX_FILE = "faiss_face_index.bin"
@@ -36,8 +35,8 @@ local_index_path = os.path.join(local_db_folder, INDEX_FILE)
 local_meta_path = os.path.join(local_db_folder, META_FILE)
 
 # Local sub folders 
-LOCAL_THUMBNAIL_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Thumbnails")
-LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events\\" + str(EventID) + r"\Images")
+LOCAL_THUMBNAIL_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\FMF\Data\Events\\" + str(EventID) + r"\Thumbnails")
+LOCAL_IMAGE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\FMF\Data\Events\\" + str(EventID) + r"\Images")
 
 # Initialize DB
 def init_db():

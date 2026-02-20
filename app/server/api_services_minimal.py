@@ -8,7 +8,6 @@
 # uvicorn app.server.api_services_minimal:service --reload
 #====================================================================================
 
-
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -38,7 +37,7 @@ import hashlib
 # Request model for BIB search
 class BibSearchRequest(BaseModel):
     bib_number: str
-    event_id: int = 1
+    event_id: int = 0
 
 # Request model for Event images with pagination
 class EventImagesRequest(BaseModel):
@@ -48,7 +47,7 @@ class EventImagesRequest(BaseModel):
 
 # Base image location for thumbnails
 workspace_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-IMAGES_BASE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\Data\Events")
+IMAGES_BASE_FOLDER = os.getenv('IMAGE_FOLDER', r"C:\Work\FMF\Data\Events")
 THUMBNAILS_FOLDER = os.path.join(workspace_root, "Images")
 
 # Local sub folders - do not assume a single EventID at module import time.
@@ -426,14 +425,14 @@ async def search_face(file: UploadFile = File(...), top_k: int = 5, event_id: in
                 print(f"Cleaned up temp file: {temp_path}")
             except Exception as e:
                 print(f"Failed to remove temp file {temp_path}: {e}")
-
+# Search based on the Bib numer entered by the user from the selecetd  event
 @service.post("/search-bib")
 async def search_bib(request: BibSearchRequest):
     """Search images by BIB number"""
     try:
         # Ensure event_id is present (model has default=1)
         event_id = int(request.event_id)
-        local_db_folder = os.getenv('DB_FOLDER', r"C:\\Work\\Data\\Events\\" + str(event_id) + r"\DB")  # Local folder to store DB
+        local_db_folder = os.getenv('DB_FOLDER', r"C:\\Work\\FMF\\Data\\Events\\" + str(event_id) + r"\DB")  # Local folder to store DB
         DB_FILE = "ImageDB.sqlite"
         local_db_path = os.path.join(local_db_folder, DB_FILE)
         if not os.path.exists(local_db_path):
@@ -449,17 +448,23 @@ async def search_bib(request: BibSearchRequest):
         
         matches = cursor.fetchall()
         conn.close()
-        
         results = []
         for match in matches:
             filename, filepath, bibtags = match
+            # Use the basename of FilePath if possible (this should map to files inside Events/<id>/Thumbnails or Images)
+            thumb_name = os.path.basename(filepath) if filepath else filename
+            
+            # Return proper URL path instead of filesystem path
+            thumbnail_url = f"/event-image/{event_id}/{thumb_name}"
+            
             results.append({
                 "FileName": filename,
                 "FilePath": filepath,
                 "BibTags": bibtags,
-                "ThumbnailUrl": f"/images/{filename}"
+                "ThumbnailUrl": thumbnail_url
             })
-        
+            print(f"/search-bib: Found match for BIB {request.bib_number} - file: {thumbnail_url}")
+
         return {"matches": results, "count": len(results)}
     except Exception as e:
         return {"error": str(e), "matches": []}
@@ -525,12 +530,13 @@ def get_event_thumbnail(event_id: int):
         print(f"Error serving thumbnail for event {event_id}: {e}")
         return {"error": f"Thumbnail not available for event {event_id}"}
 
+# GEt all images based on the selecetd event
 @service.post("/event-images")
 async def get_event_images(request: EventImagesRequest):
     """Get paginated images for a specific event"""
     try:
 
-        local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\Data\Events\\" + str(request.event_id) + r"\DB")  # Local folder to store DB
+        local_db_folder = os.getenv('DB_FOLDER', r"C:\Work\FMF\Data\Events\\" + str(request.event_id) + r"\DB")  # Local folder to store DB
         DB_FILE = "ImageDB.sqlite"
         local_db_path = os.path.join(local_db_folder, DB_FILE)
 
@@ -565,6 +571,9 @@ async def get_event_images(request: EventImagesRequest):
 
             # Prefer event-specific thumbnails/images if they exist; otherwise prefer global thumbnails
             event_thumb = os.path.join(event_thumbnails_path(request.event_id), thumb_name)
+
+            print(f"event_thumb is {event_thumb}")
+
             event_image = os.path.join(event_images_path(request.event_id), thumb_name)
 
             chosen_source = None

@@ -46,3 +46,8 @@ token.pickle
 # Excel temp files
 *.xlsx
 ~$*.xlsx
+
+# all image files and DB files to be ignored to 
+Data/
+DB/
+Images/

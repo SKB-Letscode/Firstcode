@@ -1284,9 +1284,8 @@
                 const card = document.createElement('div');
                 card.className = 'image-card';
 
-                // Use ThumbnailUrl from API (already includes /images/ prefix)
+                // Use ThumbnailUrl from API (already includes /images/ or /event-image/ prefix)
                 const imageUrl = match.ThumbnailUrl ? `${API_BASE}${match.ThumbnailUrl}` : `${API_BASE}/images/${match.FileName}`;
-                
                 card.innerHTML = `
                     <div class="image-wrapper">
                         <img src="${imageUrl}" alt="${match.FileName}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2218%22 dy=%2210.5%22 font-weight=%22bold%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22%3EImage not available%3C/text%3E%3C/svg%3E'">
